@@ -1,0 +1,4 @@
+game/build
+game/bin
+*.tsj
+*.tmj

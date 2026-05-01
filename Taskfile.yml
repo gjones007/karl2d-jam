@@ -9,9 +9,15 @@ tasks:
 
   build:
     cmds:
-      - odin run ../karl2d/build_web -- ./gamepad -debug
+      - odin run ../karl2d/build_web -- ./game -debug
 
   run:
-    dir: '{{.TASKFILE_DIR}}/gamepad/bin/web'  
+    dir: '{{.TASKFILE_DIR}}/game/bin/web'  
     cmds:
       - python -m http.server 8000
+
+  maps:
+    cmds:
+      - tiled --export-tileset ./assets/fullsheet.tsx fullsheet.tsj --minimize
+      - tiled --export-map ./assets/mine.tmx ./assets/mine.tmj --minimize
+      - jq -c '.tilesets[].source = "fullsheet.tsj"' ./assets/mine.tmj > ./mine.tmj
