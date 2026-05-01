@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task: build
+
+  build:
+    cmds:
+      - odin run ../karl2d/build_web -- ./gamepad -debug
+
+  run:
+    dir: '{{.TASKFILE_DIR}}/gamepad/bin/web'  
+    cmds:
+      - python -m http.server 8000
