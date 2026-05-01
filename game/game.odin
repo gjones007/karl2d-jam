@@ -1,52 +1,8 @@
-package karl2d_gamepad_example
+package karl2d_game
 
 import k2 "../../karl2d"
 import "../tiled"
 import "core:fmt"
-import "core:mem"
-
-tiled_map_file :: #load("../mine.tmj")
-tiled_tileset_file :: #load("../fullsheet.tsj")
-tiled_tileset_image_file :: #load("../assets/fullsheet.png")
-
-tiled_map: tiled.Map
-tileset_textures: []k2.Texture
-level_allocator: mem.Allocator
-
-load_map :: proc(alloc: mem.Allocator) -> (tiled_map: tiled.Map, tileset_textures: []k2.Texture) {
-	tiled_map = tiled.parse_tilemap(tiled_map_file, alloc)
-	tileset_textures = make_slice([]k2.Texture, len(tiled_map.tilesets), alloc)
-
-	for i in 0 ..< len(tiled_map.tilesets) {
-		map_tileset := tiled_map.tilesets[i]
-
-		ts := tiled.parse_tileset(tiled_tileset_file, alloc)
-		ts.first_gid = map_tileset.first_gid
-		if len(ts.source) == 0 do ts.source = map_tileset.source
-
-		// Some exported tilesets omit tilecount; derive it from dimensions so gid range checks still work.
-		if ts.tile_count <= 0 && ts.columns > 0 && ts.tile_height > 0 {
-			row_stride := ts.tile_height + ts.spacing
-			if row_stride > 0 {
-				rows := ts.image_height / row_stride
-				ts.tile_count = ts.columns * rows
-			}
-		}
-
-		tiled_map.tilesets[i] = ts
-		tileset_textures[i] = k2.load_texture_from_bytes(tiled_tileset_image_file)
-	}
-
-	return
-}
-
-unload_map :: proc(alloc: mem.Allocator, textures: []k2.Texture) {
-  for tex in textures {
-    k2.destroy_texture(tex)
-  }
-
-  free_all(alloc)
-}
 
 gamepad_demo :: proc(gamepad: k2.Gamepad_Index, offset: k2.Vec2) {
 	if !k2.is_gamepad_active(gamepad) {
@@ -135,21 +91,40 @@ init :: proc() {
 
 	level_allocator = context.allocator
 	tiled_map, tileset_textures = load_map(level_allocator)
+	player_init()
+	sounds_init()
+	camera = k2.Camera {
+		zoom = 2,
+	}
+
 }
+
+update_controls :: proc() {
+    update_player_controls(
+      &player,
+      dt,
+      { tiled_map.layers[int(Layers.Walls)] },
+      tiled_map.width,
+      tiled_map.height,
+      tiled_map.tile_width,
+      tiled_map.tile_height,
+    )
+}
+
+dt: f32
+camera : k2.Camera
 
 step :: proc() -> bool {
 	if !k2.update() {
 		return false
 	}
 
+	update_controls()
+
+    dt = k2.get_frame_time()
 	k2.clear(k2.DARK_BLUE)
 
-	gamepad_demo(0, {0, 0})
-	gamepad_demo(1, {500, 0})
-	gamepad_demo(2, {0, 300})
-	gamepad_demo(3, {500, 300})
-
-	k2.set_camera(nil)
+	k2.set_camera(camera)
 	screen_rect := k2.rect_from_pos_size({}, k2.get_screen_size())
 
 	for layer in tiled_map.layers {
@@ -181,6 +156,8 @@ step :: proc() -> bool {
 			k2.draw_texture_rect(tileset_textures[tileset_idx], source, {world_x, world_y})
 		}
 	}
+	draw_player(tiled_map.tilesets[0], tileset_textures[0], player) // pass in whatever
+
 
 	k2.present()
 	free_all(context.temp_allocator)

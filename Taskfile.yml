@@ -9,7 +9,7 @@ tasks:
 
   build:
     cmds:
-      - odin run ../karl2d/build_web -- ./game -debug
+      - odin run ../karl2d/build_web -- ./game -o:minimal
 
   run:
     dir: '{{.TASKFILE_DIR}}/game/bin/web'  
