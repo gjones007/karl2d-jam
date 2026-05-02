@@ -32,7 +32,7 @@ package rfxgen
 import "base:runtime"
 import "core:math"
 import "core:math/rand"
-import "core:os"
+// import "core:os"
 
 //----------------------------------------------------------------------------------
 // Defines and Macros
@@ -485,52 +485,52 @@ WaveParamsOnDisk :: struct #packed {
     using parameters: WaveParams,
 }
 
-LoadWaveParams :: proc(fileName: string) -> (WaveParams, bool) {
-    p := WaveParamsOnDisk{}
-    file, err := os.open(fileName, os.O_RDONLY)
-    if err != nil {
-        return p.parameters, false
-    }
-    read, read_err := os.read_ptr(file, &p, size_of(WaveParamsOnDisk))
+// LoadWaveParams :: proc(fileName: string) -> (WaveParams, bool) {
+//     p := WaveParamsOnDisk{}
+//     file, err := os.open(fileName, os.O_RDONLY)
+//     if err != nil {
+//         return p.parameters, false
+//     }
+//     read, read_err := os.read_ptr(file, &p, size_of(WaveParamsOnDisk))
 
-    if read_err != nil {
-        return p.parameters, false
-    }
+//     if read_err != nil {
+//         return p.parameters, false
+//     }
 
-    if !((p.signature[0] == 'r') && (p.signature[1] == 'F') && (p.signature[2] == 'X') && (p.signature[3] == ' ')) {
-        return p.parameters, false
-    }
+//     if !((p.signature[0] == 'r') && (p.signature[1] == 'F') && (p.signature[2] == 'X') && (p.signature[3] == ' ')) {
+//         return p.parameters, false
+//     }
 
-    if read > 0 && p.length == size_of(p.parameters) {
-        return p.parameters, true
-    }
-    return p.parameters, false
-}
+//     if read > 0 && p.length == size_of(p.parameters) {
+//         return p.parameters, true
+//     }
+//     return p.parameters, false
+// }
 
-SaveWaveParams :: proc(fileName: string, params: WaveParams) -> bool {
-    p := WaveParamsOnDisk{
-        parameters= params,
-    }
-    p.signature = { 'r', 'F', 'X',' ' }
-    p.version = 200
-    p.length = size_of(p.parameters)
+// SaveWaveParams :: proc(fileName: string, params: WaveParams) -> bool {
+//     p := WaveParamsOnDisk{
+//         parameters= params,
+//     }
+//     p.signature = { 'r', 'F', 'X',' ' }
+//     p.version = 200
+//     p.length = size_of(p.parameters)
 
-    file, err := os.open(fileName, os.O_WRONLY | os.O_CREATE)
-    if err != nil {
-        return false
-    }
+//     file, err := os.open(fileName, os.O_WRONLY | os.O_CREATE)
+//     if err != nil {
+//         return false
+//     }
 
-    written, write_err := os.write_ptr(file, &p, size_of(WaveParamsOnDisk))
-    if write_err != nil {
-        return false
-    }
+//     written, write_err := os.write_ptr(file, &p, size_of(WaveParamsOnDisk))
+//     if write_err != nil {
+//         return false
+//     }
 
-    if written > 0 {
-        return true
-    }
+//     if written > 0 {
+//         return true
+//     }
 
-    return false
-}
+//     return false
+// }
 
 //--------------------------------------------------------------------------------------------
 // Sound generation functions

@@ -1,44 +1,46 @@
 package karl2d_game
 
-import "../tiled"
 import k2 "../../karl2d"
+import "../tiled"
 import "core:math"
 
-player : Player
+player: Player
 
 Player :: struct {
-	x, y: f32,
-    facing: Facing,
-    anim_frame: int,
-    anim_timer: f32,
+	x, y:       f32,
+	facing:     Facing,
+	anim_frame: int,
+	anim_timer: f32,
+	hp:         i32,
 }
 
 Facing :: enum {
-    Up,
-    Down,
-    Left,
-    Right,
+	Up,
+	Down,
+	Left,
+	Right,
 }
 
 WalkingAnimation := [Facing][4]i32 {
-    .Up = {5142, 5143, 5144, 5145},
-    .Down = {4839, 4840, 4841, 4842},
-    .Left = {4940, 4941, 4942, 4943},
-    .Right = {5041, 5042, 5043, 5044},
+	.Up    = {5142, 5143, 5144, 5145},
+	.Down  = {4839, 4840, 4841, 4842},
+	.Left  = {4940, 4941, 4942, 4943},
+	.Right = {5041, 5042, 5043, 5044},
 }
 
 Player_Speed: f32 : 100
-Gamepad_Deadzone: f32 : 0.2
+// Gamepad_Deadzone: f32 : 0.2
 Player_Frame_Duration: f32 : 0.12
 Player_Bounds_Width: f32 : 16
 Player_Bounds_Height: f32 : 16
 
 player_init :: proc() {
-    player.x = 16 * 4
-    player.y = 16 * 4
-    player.facing = .Down
-    player.anim_frame = 0
-    player.anim_timer = 0
+	player.x = 16 * 4
+	player.y = 16 * 4
+	player.facing = .Down
+	player.anim_frame = 0
+	player.anim_timer = 0
+	player.hp = 100
 }
 
 player_collision_check :: proc(
@@ -89,73 +91,116 @@ update_player_controls :: proc(
 	collision_layers: []tiled.Layer,
 	map_width, map_height, tile_width, tile_height: i32,
 ) {
-    move_x: f32 = 0
-    move_y: f32 = 0
+	move_x: f32 = 0
+	move_y: f32 = 0
 
-    if k2.key_is_held(.A) do move_x -= 1
-    if k2.key_is_held(.D) do move_x += 1
-    if k2.key_is_held(.W) do move_y -= 1
-    if k2.key_is_held(.S) do move_y += 1
+	if is_input_active(.INPUT_GAME_WALK_WEST) do move_x -= input_strength(.INPUT_GAME_WALK_WEST)
+	if is_input_active(.INPUT_GAME_WALK_EAST) do move_x += input_strength(.INPUT_GAME_WALK_EAST)
+	if is_input_active(.INPUT_GAME_WALK_NORTH) do move_y -= input_strength(.INPUT_GAME_WALK_NORTH)
+	if is_input_active(.INPUT_GAME_WALK_SOUTH) do move_y += input_strength(.INPUT_GAME_WALK_SOUTH)
 
-    if k2.is_gamepad_active(0) {
-        stick_x := k2.get_gamepad_axis(0, .Left_Stick_X)
-        stick_y := k2.get_gamepad_axis(0, .Left_Stick_Y)
+	if is_input_active(.INPUT_UI_TOGGLE_INVENTORY) do init_main_menu()
 
-        if math.abs(stick_x) >= Gamepad_Deadzone do move_x += stick_x
-        if math.abs(stick_y) >= Gamepad_Deadzone do move_y += stick_y
-    }
+	move_len := math.sqrt(move_x * move_x + move_y * move_y)
+	if move_len > 1 {
+		move_x /= move_len
+		move_y /= move_len
+	}
 
-    move_len := math.sqrt(move_x * move_x + move_y * move_y)
-    if move_len > 1 {
-        move_x /= move_len
-        move_y /= move_len
-    }
+	moving := false
 
-    moving := false
+	if move_x < 0 &&
+	   !player_collision_check(
+			   p.x + move_x * Player_Speed * dt,
+			   p.y,
+			   collision_layers,
+			   map_width,
+			   map_height,
+			   tile_width,
+			   tile_height,
+		   ) {
+		p.x += move_x * Player_Speed * dt
+		moving = true
+	}
+	if move_x > 0 &&
+	   !player_collision_check(
+			   p.x + move_x * Player_Speed * dt,
+			   p.y,
+			   collision_layers,
+			   map_width,
+			   map_height,
+			   tile_width,
+			   tile_height,
+		   ) {
+		p.x += move_x * Player_Speed * dt
+		moving = true
+	}
+	if move_y < 0 &&
+	   !player_collision_check(
+			   p.x,
+			   p.y + move_y * Player_Speed * dt,
+			   collision_layers,
+			   map_width,
+			   map_height,
+			   tile_width,
+			   tile_height,
+		   ) {
+		p.y += move_y * Player_Speed * dt
+		moving = true
+	}
+	if move_y > 0 &&
+	   !player_collision_check(
+			   p.x,
+			   p.y + move_y * Player_Speed * dt,
+			   collision_layers,
+			   map_width,
+			   map_height,
+			   tile_width,
+			   tile_height,
+		   ) {
+		p.y += move_y * Player_Speed * dt
+		moving = true
+	}
 
-    if move_x < 0 && !player_collision_check(p.x + move_x * Player_Speed * dt, p.y, collision_layers, map_width, map_height, tile_width, tile_height) {
-        p.x += move_x * Player_Speed * dt
-        moving = true
-    }
-    if move_x > 0 && !player_collision_check(p.x + move_x * Player_Speed * dt, p.y, collision_layers, map_width, map_height, tile_width, tile_height) {
-        p.x += move_x * Player_Speed * dt
-        moving = true
-    }
-    if move_y < 0 && !player_collision_check(p.x, p.y + move_y * Player_Speed * dt, collision_layers, map_width, map_height, tile_width, tile_height) {
-        p.y += move_y * Player_Speed * dt
-        moving = true
-    }
-    if move_y > 0 && !player_collision_check(p.x, p.y + move_y * Player_Speed * dt, collision_layers, map_width, map_height, tile_width, tile_height) {
-        p.y += move_y * Player_Speed * dt
-        moving = true
-    }
+	if moving {
+		if math.abs(move_x) >= math.abs(move_y) {
+			p.facing = .Left if move_x < 0 else .Right
+		} else {
+			p.facing = .Up if move_y < 0 else .Down
+		}
+	}
 
-    if moving {
-        if math.abs(move_x) >= math.abs(move_y) {
-            p.facing = .Left if move_x < 0 else .Right
-        } else {
-            p.facing = .Up if move_y < 0 else .Down
-        }
-    }
-
-    if moving {
-        p.anim_timer += dt
-        if p.anim_timer >= Player_Frame_Duration {
-            p.anim_timer -= Player_Frame_Duration
-            p.anim_frame = (p.anim_frame + 1) % 4
-        play_sound(.PlayerWalk)
-        }
-    } else {
-        p.anim_frame = 0
-        p.anim_timer = 0
-    }
+	if moving {
+		p.anim_timer += dt
+		if p.anim_timer >= Player_Frame_Duration {
+			p.anim_timer -= Player_Frame_Duration
+			p.anim_frame = (p.anim_frame + 1) % 4
+			play_sound(.PlayerWalk)
+		}
+	} else {
+		p.anim_frame = 0
+		p.anim_timer = 0
+	}
 }
 
 draw_player :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
-    tile_id := WalkingAnimation[p.facing][p.anim_frame]
-    tileset_x := f32((tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing))
-    tileset_y := f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
-    source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
-    // k2.DrawTextureRec(texture, source, {p.x, p.y}, k2.WHITE)
-    k2.draw_texture_rect(texture, source, {p.x, p.y})
+	tile_id := WalkingAnimation[p.facing][p.anim_frame]
+	tileset_x := f32((tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing))
+	tileset_y := f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
+	source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
+	// k2.DrawTextureRec(texture, source, {p.x, p.y}, k2.WHITE)
+	k2.draw_texture_rect(texture, source, {p.x, p.y})
+}
+
+// draw hearts
+draw_player_ui :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
+	for i in 0 ..< (p.hp + 1) / 25 {
+		tile_id := RED_HEARTS[i]
+
+		tileset_x := f32((tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing))
+		tileset_y := f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
+		source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
+
+		k2.draw_texture_rect(texture, source, {8 + f32(i) * 20, 8})
+	}
 }

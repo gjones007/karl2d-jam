@@ -1,7 +1,7 @@
 package karl2d_game
 
-import "../tiled"
 import k2 "../../karl2d"
+import "../tiled"
 import "core:mem"
 
 tiled_map_file :: #load("../mine.tmj")
@@ -13,10 +13,10 @@ tileset_textures: []k2.Texture
 level_allocator: mem.Allocator
 
 Layers :: enum {
-  Ground,
-  Walls,
-  Decoration,
-  Objects,
+	Ground,
+	Walls,
+	Decoration,
+	Objects,
 }
 
 load_map :: proc(alloc: mem.Allocator) -> (tiled_map: tiled.Map, tileset_textures: []k2.Texture) {
@@ -47,9 +47,9 @@ load_map :: proc(alloc: mem.Allocator) -> (tiled_map: tiled.Map, tileset_texture
 }
 
 unload_map :: proc(alloc: mem.Allocator, textures: []k2.Texture) {
-  for tex in textures {
-    k2.destroy_texture(tex)
-  }
+	for tex in textures {
+		k2.destroy_texture(tex)
+	}
 
-  free_all(alloc)
+	free_all(alloc)
 }

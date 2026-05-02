@@ -2,133 +2,75 @@ package karl2d_game
 
 import k2 "../../karl2d"
 import "../tiled"
-import "core:fmt"
+import "core:math"
 
-gamepad_demo :: proc(gamepad: k2.Gamepad_Index, offset: k2.Vec2) {
-	if !k2.is_gamepad_active(gamepad) {
-		title := fmt.tprintf("Gamepad %v (not connected)", gamepad + 1)
-		ts := k2.measure_text(title, 30)
-		k2.draw_text(title, offset + {250, 60} - {ts.x / 2, 0}, 30, color = k2.WHITE)
-		return
-	}
-
-	title := fmt.tprintf("Gamepad %v", gamepad + 1)
-	ts := k2.measure_text(title, 30)
-	k2.draw_text(title, offset + {250, 60} - {ts.x / 2, 0}, 30, color = k2.WHITE)
-
-	button_color :: proc(
-		gamepad: k2.Gamepad_Index,
-		button: k2.Gamepad_Button,
-		active := k2.WHITE,
-		inactive := k2.GRAY,
-	) -> k2.Color {
-		return k2.gamepad_button_is_held(gamepad, button) ? active : inactive
-	}
-
-	g := gamepad
-	o := offset
-	k2.draw_circle(o + {120, 120}, 10, button_color(g, .Left_Face_Up))
-	k2.draw_circle(o + {120, 160}, 10, button_color(g, .Left_Face_Down))
-	k2.draw_circle(o + {100, 140}, 10, button_color(g, .Left_Face_Left))
-	k2.draw_circle(o + {140, 140}, 10, button_color(g, .Left_Face_Right))
-
-	k2.draw_circle(o + {320 + 50, 120}, 10, button_color(g, .Right_Face_Up))
-	k2.draw_circle(o + {320 + 50, 160}, 10, button_color(g, .Right_Face_Down))
-	k2.draw_circle(o + {300 + 50, 140}, 10, button_color(g, .Right_Face_Left))
-	k2.draw_circle(o + {340 + 50, 140}, 10, button_color(g, .Right_Face_Right))
-
-	k2.draw_rect_vec(o + {250 - 30, 140}, {20, 10}, button_color(g, .Middle_Face_Left))
-	k2.draw_rect_vec(o + {250 + 10, 140}, {20, 10}, button_color(g, .Middle_Face_Right))
-
-	left_stick := k2.Vec2 {
-		k2.get_gamepad_axis(gamepad, .Left_Stick_X),
-		k2.get_gamepad_axis(gamepad, .Left_Stick_Y),
-	}
-
-	right_stick := k2.Vec2 {
-		k2.get_gamepad_axis(gamepad, .Right_Stick_X),
-		k2.get_gamepad_axis(gamepad, .Right_Stick_Y),
-	}
-
-	left_trigger := k2.get_gamepad_axis(gamepad, .Left_Trigger)
-	right_trigger := k2.get_gamepad_axis(gamepad, .Right_Trigger)
-
-	k2.set_gamepad_vibration(gamepad, left_trigger, right_trigger)
-
-	k2.draw_rect_vec(o + {80, 50}, {20, 10}, button_color(g, .Left_Shoulder))
-	k2.draw_rect_vec(
-		o + {50, 50} + {0, left_trigger * 20},
-		{20, 10},
-		button_color(g, .Left_Trigger, k2.WHITE, k2.GRAY),
-	)
-
-	k2.draw_rect_vec(o + {420, 50}, {20, 10}, button_color(g, .Right_Shoulder))
-	k2.draw_rect_vec(
-		o + {450, 50} + {0, right_trigger * 20},
-		{20, 10},
-		button_color(g, .Right_Trigger, k2.WHITE, k2.GRAY),
-	)
-	k2.draw_circle(
-		o + {200, 200} + 20 * left_stick,
-		20,
-		button_color(g, .Left_Stick_Press, k2.WHITE, k2.GRAY),
-	)
-	k2.draw_circle(
-		o + {300, 200} + 20 * right_stick,
-		20,
-		button_color(g, .Right_Stick_Press, k2.WHITE, k2.GRAY),
-	)
+GAME_VIEW := View {
+	Open    = open_view,
+	Close   = close_view,
+	Control = control_view,
+	Render  = render_view,
 }
 
-main :: proc() {
-	init()
-	for step() {}
-	shutdown()
-}
+@(private = "file")
+dt: f32
+@(private = "file")
+camera: k2.Camera
+@(private = "file")
+ui_camera: k2.Camera
 
-init :: proc() {
-	k2.init(1000, 636, "Karl2D Game Demo")
 
+@(private = "file")
+GameFile: struct {
+	IsOpen:   bool,
+	title:    string,
+	options:  [dynamic]string,
+	selected: int,
+} = {}
+
+@(private = "file")
+open_view :: proc() {
 	level_allocator = context.allocator
 	tiled_map, tileset_textures = load_map(level_allocator)
+
 	player_init()
-	sounds_init()
 	camera = k2.Camera {
+		offset = k2.get_screen_size() / 2,
+		zoom   = 3,
+	}
+	ui_camera = k2.Camera {
+		// offset = k2.get_screen_size() / 2,
 		zoom = 2,
 	}
-
 }
 
-update_controls :: proc() {
-    update_player_controls(
-      &player,
-      dt,
-      { tiled_map.layers[int(Layers.Walls)] },
-      tiled_map.width,
-      tiled_map.height,
-      tiled_map.tile_width,
-      tiled_map.tile_height,
-    )
+@(private = "file")
+control_view :: proc() {
+	update_player_controls(
+		&player,
+		dt,
+		{tiled_map.layers[int(Layers.Walls)]},
+		tiled_map.width,
+		tiled_map.height,
+		tiled_map.tile_width,
+		tiled_map.tile_height,
+	)
 }
 
-dt: f32
-camera : k2.Camera
+@(private = "file")
+render_view :: proc() {
+	dt = k2.get_frame_time()
 
-step :: proc() -> bool {
-	if !k2.update() {
-		return false
-	}
-
-	update_controls()
-
-    dt = k2.get_frame_time()
-	k2.clear(k2.DARK_BLUE)
+	// camera.target is the center of the camera in world coordinates
+	camera.target.x = player.x + 8
+	camera.target.y = player.y + 8
+	camera.offset = k2.get_screen_size() / 2
 
 	k2.set_camera(camera)
+
 	screen_rect := k2.rect_from_pos_size({}, k2.get_screen_size())
 
 	for layer in tiled_map.layers {
-		if layer.type != .tilelayer do continue //implement image layers and other static renderables here
+		if layer.type != .tilelayer do continue
 		for gid, i in layer.data {
 			if gid == 0 do continue
 
@@ -154,17 +96,33 @@ step :: proc() -> bool {
 			if .flip_vertical in flags do source.h *= -1
 
 			k2.draw_texture_rect(tileset_textures[tileset_idx], source, {world_x, world_y})
+
+			dist := distance(
+				player.x + 8,
+				player.y + 8,
+				world_x + source.w / 2,
+				world_y + source.h / 2,
+			)
+			alpha := cast(u8)math.remap_clamped(dist, 50, 125, 0, 255)
+			k2.draw_rect_vec(
+				{world_x, world_y},
+				{source.w, source.h},
+				k2.color_alpha(k2.BLACK, alpha),
+			)
 		}
 	}
-	draw_player(tiled_map.tilesets[0], tileset_textures[0], player) // pass in whatever
-
-
-	k2.present()
-	free_all(context.temp_allocator)
-	return true
+	draw_player(tiled_map.tilesets[0], tileset_textures[0], player)
+	k2.set_camera(ui_camera)
+	draw_player_ui(tiled_map.tilesets[0], tileset_textures[0], player)
 }
 
-shutdown :: proc() {
+@(private = "file")
+close_view :: proc() {
 	unload_map(level_allocator, tileset_textures)
-	k2.shutdown()
+}
+
+distance :: proc(start_x, start_y, end_x, end_y: f32) -> f32 {
+	dx := f32(math.max(start_x, end_x) - math.min(start_x, end_x))
+	dy := f32(math.max(start_y, end_y) - math.min(start_y, end_y))
+	return math.sqrt((dx * dx) + (dy * dy))
 }
