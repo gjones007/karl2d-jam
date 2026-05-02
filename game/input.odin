@@ -1,6 +1,7 @@
 package karl2d_game
 
 import k2 "../../karl2d"
+import "core:fmt"
 
 Gamepad_Deadzone: f32 : 0.2
 
@@ -21,6 +22,8 @@ Input :: enum {
 	INPUT_GAME_JUMP,
 	INPUT_GAME_ATTACK,
 	INPUT_GAME_ACTION,
+	// INPUT_GAME_NEXT_WEAPON,
+	// INPUT_GAME_PREV_WEAPON,
 	INPUT_UI_UP,
 	INPUT_UI_RIGHT,
 	INPUT_UI_DOWN,
@@ -166,6 +169,22 @@ load_default_input_config :: proc() {
 	inputInfo[.INPUT_GAME_ACTION].bindInfo.holdShift = false
 	inputInfo[.INPUT_GAME_ACTION].gamepadBindInfo.button = .Right_Face_Left
 
+	// inputInfo[.INPUT_GAME_NEXT_WEAPON].bindInfo.primaryKey = .Left_Bracket
+	// inputInfo[.INPUT_GAME_NEXT_WEAPON].bindInfo.secondaryKey = nil
+	// inputInfo[.INPUT_GAME_NEXT_WEAPON].bindInfo.state = .DOWN
+	// inputInfo[.INPUT_GAME_NEXT_WEAPON].bindInfo.holdAlt = false
+	// inputInfo[.INPUT_GAME_NEXT_WEAPON].bindInfo.holdControl = false
+	// inputInfo[.INPUT_GAME_NEXT_WEAPON].bindInfo.holdShift = false
+	// inputInfo[.INPUT_GAME_NEXT_WEAPON].gamepadBindInfo.axis = .Left_Trigger
+
+	// inputInfo[.INPUT_GAME_PREV_WEAPON].bindInfo.primaryKey = .Right_Bracket
+	// inputInfo[.INPUT_GAME_PREV_WEAPON].bindInfo.secondaryKey = nil
+	// inputInfo[.INPUT_GAME_PREV_WEAPON].bindInfo.state = .DOWN
+	// inputInfo[.INPUT_GAME_PREV_WEAPON].bindInfo.holdAlt = false
+	// inputInfo[.INPUT_GAME_PREV_WEAPON].bindInfo.holdControl = false
+	// inputInfo[.INPUT_GAME_PREV_WEAPON].bindInfo.holdShift = false
+	// inputInfo[.INPUT_GAME_PREV_WEAPON].gamepadBindInfo.axis = .Right_Trigger
+
 	inputInfo[.INPUT_UI_UP].bindInfo.primaryKey = .Up
 	inputInfo[.INPUT_UI_UP].bindInfo.secondaryKey = nil
 	inputInfo[.INPUT_UI_UP].bindInfo.state = .DOWN_PULSE
@@ -239,6 +258,13 @@ load_default_input_config :: proc() {
 }
 
 update_inputs :: proc() {
+
+	// TODO: remove
+	// if k2.key_went_down(.F1) { neworigin.x += 1; fmt.printf("New origin: %v", neworigin) }
+	// if k2.key_went_down(.F2) { neworigin.x -= 1; fmt.printf("New origin: %v", neworigin) }
+	// if k2.key_went_down(.F3) { neworigin.y += 1; fmt.printf("New origin: %v", neworigin) }
+	// if k2.key_went_down(.F4) { neworigin.y -= 1; fmt.printf("New origin: %v", neworigin) }
+
 	alt_held: bool
 	control_held: bool
 	shift_held: bool

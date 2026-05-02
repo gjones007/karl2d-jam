@@ -1,5 +1,7 @@
 package karl2d_game
 
+import "core:time"
+
 OVERLAY_COLOR :: [4]u8{0, 0, 0, 115}
 FRAME_COLOR :: [4]u8{33, 36, 46, 250}
 FRAME_BORDER_COLOR :: [4]u8{204, 212, 225, 255}
@@ -43,6 +45,8 @@ PERFECT_PICKAXE: i32 = 8268
 
 DWARF_MINER: i32 = 5206
 
+MUMMY: i32 = 263
+SPAWNER: i32 = 8531
 
 ItemType :: enum {
 	POTION,
@@ -69,6 +73,7 @@ ItemPrefabInfo :: struct {
 	name:        string,
 	description: string,
 	tile_id:     i32,
+	swing_speed: time.Duration,
 }
 
 itemPrefab: [ItemPrefab]ItemPrefabInfo
@@ -79,26 +84,35 @@ init_items_prefabs :: proc() {
 		name        = "Gold Sword",
 		description = "A sword made of gold.",
 		tile_id     = SWORD_GOLD,
+		swing_speed = 200 * time.Millisecond,
 	}
 	itemPrefab[.WORN_PICKAXE] = ItemPrefabInfo {
 		type        = .WEAPON,
 		name        = "Worn Pickaxe",
 		description = "A worn pickaxe, not very effective but better than nothing.",
 		tile_id     = WORN_PICKAXE,
+		swing_speed = 400 * time.Millisecond,
 	}
 }
 
 NPCPrefab :: enum {
 	NONE,
 	DWARF_MINER,
+	MUMMY,
+	SPAWNER,
 }
 
 NPCPrefabInfo :: struct {
-	name:        string,
-	description: string,
-	health:      int,
-	disposition: Disposition,
-	tile_id:     i32,
+	name:         string,
+	description:  string,
+	health:       int,
+	damage:       int,
+	disposition:  Disposition,
+	specials:     bit_set[SpecialFlags],
+	tile_id:      i32,
+	spawn_rate:   f32,
+	spawn_prefab: NPCPrefab,
+	move_speed:   f32,
 }
 
 npcsPrefab: [NPCPrefab]NPCPrefabInfo
@@ -108,7 +122,30 @@ init_npc_prefabs :: proc() {
 		name        = "Dwarf Miner",
 		description = "A stout dwarf with a bushy beard and a pickaxe. He looks like he's been working in the mines for decades.",
 		health      = 100,
+		damage      = 10,
 		disposition = .Friendly,
 		tile_id     = DWARF_MINER,
+		move_speed  = 100.0,
+	}
+	npcsPrefab[.MUMMY] = NPCPrefabInfo {
+		name        = "Mummy",
+		description = "An ancient mummy wrapped in bandages. It moves slowly but relentlessly.",
+		health      = 150,
+		damage      = 20,
+		disposition = .Hostile,
+		tile_id     = MUMMY,
+		move_speed  = 25.0,
+	}
+	npcsPrefab[.SPAWNER] = NPCPrefabInfo {
+		name         = "Spawner",
+		description  = "A mysterious spawner that continuously generates hostile creatures.",
+		health       = 9999,
+		damage       = 0,
+		disposition  = .Hostile,
+		specials     = bit_set[SpecialFlags]{.SPAWNER, .IMMORTAL},
+		tile_id      = SPAWNER,
+		spawn_rate   = 15.0,
+		spawn_prefab = .MUMMY,
+		move_speed   = 0.0,
 	}
 }

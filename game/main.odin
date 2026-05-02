@@ -19,7 +19,8 @@ init :: proc() {
 	load_default_input_config()
 	init_npc_prefabs()
 	sounds_init()
-	push_view(&GAME_VIEW)
+	// push_view(&GAME_VIEW)
+	push_view(&TITLE_GRAPHIC_VIEW)
 	init_main_menu()
 }
 

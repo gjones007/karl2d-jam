@@ -4,20 +4,27 @@ import k2 "../../karl2d"
 import "../tiled"
 import hm "core:/container/handle_map"
 import "core:math"
+import "core:math/ease"
+import "core:time"
+
+import "core:fmt"
 
 player: Player
 
 Player :: struct {
-	x, y:           f32,
-	facing:         Facing,
-	anim_frame:     int,
-	anim_timer:     f32,
-	weapon_tile_id: i32,
-	attacking:      bool,
-	attack_timer:   f32,
-	attack_frame:   int,
-	hp:             i32,
-	inventory:      Inventory_Handle,
+	x, y:                  f32,
+	facing:                Facing,
+	anim_frame:            int,
+	anim_timer:            f32,
+	weapon_prefab:         ItemPrefab,
+	attacking:             bool,
+	attack_rotation:       f32,
+	hit_cooldown_timer:    f32,
+	swing_timer:           time.Duration,
+	attack_swing_duration: time.Duration,
+	flux_map:              ease.Flux_Map(f32),
+	hp:                    i32,
+	inventory:             Inventory_Handle,
 }
 
 Facing :: enum {
@@ -38,6 +45,10 @@ Player_Speed: f32 : 100
 Player_Frame_Duration: f32 : 0.12
 Player_Bounds_Width: f32 : 16
 Player_Bounds_Height: f32 : 16
+PLAYER_SWING_DURATION: time.Duration : 200 * time.Millisecond
+SWING_EASING_TYPE: ease.Ease : .Quartic_In
+PLAYER_HIT_COOLDOWN: f32 : 600
+Player_Swing_Arc: f32 : math.PI / 3
 
 player_init :: proc() {
 	player.x = 16 * 4
@@ -47,10 +58,30 @@ player_init :: proc() {
 	player.anim_timer = 0
 	player.hp = 100
 	player.inventory = {0, 0}
-	player.attack_timer = 0
-	player.attack_frame = 0
-	player.weapon_tile_id = SWORD_GOLD
+	player.swing_timer = 0
+	player.attack_rotation = 0
+	player.attack_swing_duration = PLAYER_SWING_DURATION
 	player.inventory = add_inventory()
+	add_inventory_item(player.inventory, .SWORD_GOLD)
+	player.weapon_prefab = .SWORD_GOLD
+	player.flux_map = ease.flux_init(f32)
+	player.hit_cooldown_timer = 0
+}
+
+take_damage_player :: proc(damage: int) {
+	player.hp -= auto_cast damage
+	player.hit_cooldown_timer = PLAYER_HIT_COOLDOWN
+	debugf("Player: Took %d damage, hp is now %d", damage, player.hp)
+	if player.hp <= 0 {
+		debugf("Player: HP is 0 or less, player has died")
+		init_message_prompt(
+			proc() {new_game()},
+			"You Died",
+			"You have succumbed to your injuries. Better luck next time!",
+			"Respawn",
+			// "Main Menu",
+		)
+	}
 }
 
 player_attempt_floor_pickup :: proc() {
@@ -151,20 +182,24 @@ update_player_controls :: proc(
 	collision_layers: []tiled.Layer,
 	map_width, map_height, tile_width, tile_height: i32,
 ) {
+	if player.hit_cooldown_timer > 0 {
+		player.hit_cooldown_timer -= dt
+	}
 	if p.attacking {
-		p.attack_timer += dt
-		if p.attack_timer >= Player_Frame_Duration {
-			p.attack_timer -= Player_Frame_Duration
-			p.attack_frame += 1
-			if p.attack_frame >= 4 {
-				p.attack_frame = 0
-				p.attacking = false
-			}
+		// Keep movement enabled while swing easing is active.
+		ease.flux_update(&p.flux_map, f64(dt))
+		if len(p.flux_map.values) == 0 {
+			p.attacking = false
+			p.attack_rotation = 0
+			p.swing_timer = 0
 		}
-		return
 	}
 
-	// if is_input_active(.INPUT_UI_TOGGLE_INVENTORY) do init_main_menu()
+	// if is_input_active(.INPUT_UI_TOGGLE_INVENTORY) {
+	// 	open_inventory_view()
+	// 	return
+	// }
+
 	if is_input_active(.INPUT_GAME_FLOOR_PICK_UP) {
 		warnf("Player: INPUT_GAME_FLOOR_PICK_UP is active, attempting pickup")
 		player_attempt_floor_pickup()
@@ -176,12 +211,11 @@ update_player_controls :: proc(
 	}
 
 
-	if is_input_active(.INPUT_GAME_ATTACK) {
+	if is_input_active(.INPUT_GAME_ATTACK) && !p.attacking {
 		play_sound(.PlayerAttack)
 		p.attacking = true
-		p.attack_timer = 0
-		p.attack_frame = 0
-		return
+		p.swing_timer = 0
+		player_init_swing_easing()
 	}
 
 	move_x: f32 = 0
@@ -192,7 +226,7 @@ update_player_controls :: proc(
 	if is_input_active(.INPUT_GAME_WALK_NORTH) do move_y -= input_strength(.INPUT_GAME_WALK_NORTH)
 	if is_input_active(.INPUT_GAME_WALK_SOUTH) do move_y += input_strength(.INPUT_GAME_WALK_SOUTH)
 
-	if is_input_active(.INPUT_UI_TOGGLE_INVENTORY) do init_main_menu()
+	if is_input_active(.INPUT_UI_TOGGLE_INVENTORY) do open_inventory_view()
 
 	move_len := math.sqrt(move_x * move_x + move_y * move_y)
 	if move_len > 1 {
@@ -276,8 +310,24 @@ update_player_controls :: proc(
 	}
 }
 
+player_init_swing_easing :: proc() {
+	// setup easing for attack swing
+	ease.flux_clear(&player.flux_map)
+	player.attack_rotation = -Player_Swing_Arc
+	_ = ease.flux_to(
+		&player.flux_map,
+		&player.attack_rotation,
+		Player_Swing_Arc,
+		SWING_EASING_TYPE,
+		player.attack_swing_duration,
+	)
+}
+
 push_view_player_inventory :: proc(p: ^Player) {
 }
+
+// TODO: remove
+// neworigin := k2.Vec2{8, 14}
 
 draw_player :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
 	tile_id := WalkingAnimation[p.facing][p.anim_frame]
@@ -286,34 +336,57 @@ draw_player :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
 	source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
 	k2.draw_texture_rect(texture, source, {p.x, p.y})
 
-	// draw the sword swing, but animate the tile in front of the player
-	// rotate around the front
+	// Draw weapon in front of the player and rotate around the side nearest the player.
 	if p.attacking {
-		attack_tile_id := p.weapon_tile_id
-		tileset_x := f32(
+		attack_tile_id := itemPrefab[p.weapon_prefab].tile_id
+		weapon_tileset_x := f32(
 			(attack_tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing),
 		)
-		tileset_y := f32(
+		weapon_tileset_y := f32(
 			(attack_tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing),
 		)
-		source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
-		dest := k2.Rect{p.x + 8, p.y + 8, f32(tileset.tile_width), f32(tileset.tile_height)}
-		origin := k2.Vec2{8, 8}
-		rotation: f32 = p.anim_timer / Player_Frame_Duration * math.PI * 2
-		if p.facing == .Up {
-			dest.y -= 16
-			rotation -= math.PI / 4
-		} else if p.facing == .Down {
-			dest.y += 16
-			rotation += math.PI / 4
-		} else if p.facing == .Left {
-			dest.x -= 16
-			rotation -= math.PI / 4
-		} else if p.facing == .Right {
-			dest.x += 16
-			rotation += math.PI / 4
+		weapon_source: k2.Rect = {
+			weapon_tileset_x,
+			weapon_tileset_y,
+			f32(tileset.tile_width),
+			f32(tileset.tile_height),
 		}
-		k2.draw_texture_fit(texture, source, dest, origin, rotation)
+
+		dest := k2.Rect{p.x, p.y, f32(tileset.tile_width), f32(tileset.tile_height)}
+		origin := k2.Vec2{8, 8}
+		base_rotation: f32 = 0
+		swing_direction: f32 = 1
+
+		switch p.facing {
+		case .Up:
+			dest.y -= 16
+			origin = {8, 14}
+			base_rotation = -math.PI / 2
+			swing_direction = -1
+		case .Down:
+			dest.y += 16
+			origin = {8, 2}
+			base_rotation = math.PI / 2
+			swing_direction = 1
+		case .Left:
+			dest.x -= 16
+			origin = {14, 8}
+			base_rotation = math.PI
+			swing_direction = -1
+		case .Right:
+			dest.x += 16
+			origin = {2, 8}
+			base_rotation = 0
+			swing_direction = 1
+		}
+
+		k2.draw_texture_fit(
+			texture,
+			weapon_source,
+			dest,
+			origin,
+			base_rotation + p.attack_rotation * swing_direction,
+		)
 	}
 }
 

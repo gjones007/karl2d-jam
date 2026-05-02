@@ -47,6 +47,11 @@ add_inventory_item :: proc(
 		}
 	}
 
+	for added < quantity {
+		append(&inventory.items, itemPrefab)
+		added += 1
+	}
+
 	return added
 }
 
@@ -76,4 +81,9 @@ remove_inventory_item :: proc(
 	}
 
 	return removed
+}
+
+get_inventory_items :: proc(inventory: Inventory_Handle) -> []ItemPrefab {
+	inventory := hm.get(&inventoryEntities, inventory)
+	return inventory.items[:]
 }

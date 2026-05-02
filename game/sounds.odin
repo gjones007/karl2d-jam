@@ -14,6 +14,7 @@ SoundsEnum :: enum {
 	EnemyHit,
 	EnemyDeath,
 	ItemPickup,
+	EnemySpawn,
 	// BackgroundMusic,
 }
 
@@ -21,7 +22,9 @@ sounds: [SoundsEnum]k2.Sound
 
 rfxgen :: proc(s: SoundsEnum) {
 	params: rfx.WaveParams
-	if s == .ItemPickup {
+	if s == .EnemySpawn {
+		params = rfx.GenExplosion()
+	} else if s == .ItemPickup {
 		params = rfx.GenPickupCoin()
 	} else if s == .EnemyHit || s == .EnemyDeath || s == .PlayerHurt {
 		params = rfx.GenHitHurt()
@@ -48,5 +51,6 @@ sounds_init :: proc() {
 	rfxgen(.EnemyHit)
 	rfxgen(.EnemyDeath)
 	rfxgen(.ItemPickup)
+	rfxgen(.EnemySpawn)
 	// rfxgen(.BackgroundMusic)
 }

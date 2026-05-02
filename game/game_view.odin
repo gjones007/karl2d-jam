@@ -89,6 +89,8 @@ open_view :: proc() {
 	//TODO: testing
 	add_npc_from_prefabs(16 * 4, 16 * 4, .DWARF_MINER)
 	add_item_from_prefabs(16 * 4, 16 * 5, .WORN_PICKAXE)
+	add_npc_from_prefabs(16 * 13, 16 * 15, .MUMMY)
+	add_npc_from_prefabs(16 * 13, 16 * 17, .SPAWNER)
 
 	camera = k2.Camera {
 		offset = k2.get_screen_size() / 2,
@@ -102,6 +104,10 @@ open_view :: proc() {
 
 @(private = "file")
 control_view :: proc() -> bool {
+	npc_actions(dt)
+	if player.hp <= 0 {
+		return true
+	}
 	update_player_controls(
 		&player,
 		dt,
