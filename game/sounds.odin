@@ -9,17 +9,25 @@ SoundsEnum :: enum {
 	PlayerWalk,
 	// PlayerJump,
 	// PlayerLand,
-	// PlayerAttack,
-	// EnemyHit,
-	// EnemyDeath,
-	// ItemPickup,
+	PlayerHurt,
+	PlayerAttack,
+	EnemyHit,
+	EnemyDeath,
+	ItemPickup,
 	// BackgroundMusic,
 }
 
 sounds: [SoundsEnum]k2.Sound
 
 rfxgen :: proc(s: SoundsEnum) {
-	params := rfx.GenBlipSelect()
+	params: rfx.WaveParams
+	if s == .ItemPickup {
+		params = rfx.GenPickupCoin()
+	} else if s == .EnemyHit || s == .EnemyDeath || s == .PlayerHurt {
+		params = rfx.GenHitHurt()
+	} else {
+		params = rfx.GenBlipSelect()
+	}
 	returned_count: u32 = 0
 	data := rfx.GenerateWave(&params, &returned_count)
 	bytes := slice.bytes_from_ptr(data, auto_cast returned_count)
@@ -35,9 +43,10 @@ sounds_init :: proc() {
 	rfxgen(.PlayerWalk)
 	// rfxgen(.PlayerJump)
 	// rfxgen(.PlayerLand)
-	// rfxgen(.PlayerAttack)
-	// rfxgen(.EnemyHit)
-	// rfxgen(.EnemyDeath)
-	// rfxgen(.ItemPickup)
+	rfxgen(.PlayerAttack)
+	rfxgen(.PlayerHurt)
+	rfxgen(.EnemyHit)
+	rfxgen(.EnemyDeath)
+	rfxgen(.ItemPickup)
 	// rfxgen(.BackgroundMusic)
 }

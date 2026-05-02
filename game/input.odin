@@ -20,6 +20,7 @@ Input :: enum {
 	INPUT_GAME_WALK_WEST,
 	INPUT_GAME_JUMP,
 	INPUT_GAME_ATTACK,
+	INPUT_GAME_ACTION,
 	INPUT_UI_UP,
 	INPUT_UI_RIGHT,
 	INPUT_UI_DOWN,
@@ -108,7 +109,6 @@ load_default_input_config :: proc() {
 	inputInfo[.INPUT_GAME_FLOOR_PICK_UP].bindInfo.holdControl = false
 	inputInfo[.INPUT_GAME_FLOOR_PICK_UP].bindInfo.holdShift = false
 	inputInfo[.INPUT_GAME_FLOOR_PICK_UP].gamepadBindInfo.button = .Right_Face_Right
-	inputInfo[.INPUT_GAME_FLOOR_PICK_UP].gamepadBindInfo.positive = true
 
 	inputInfo[.INPUT_GAME_WALK_NORTH].bindInfo.primaryKey = .W
 	inputInfo[.INPUT_GAME_WALK_NORTH].bindInfo.secondaryKey = nil
@@ -149,6 +149,22 @@ load_default_input_config :: proc() {
 	inputInfo[.INPUT_GAME_WALK_WEST].gamepadBindInfo.axis = .Left_Stick_X
 	inputInfo[.INPUT_GAME_WALK_WEST].gamepadBindInfo.positive = false
 	inputInfo[.INPUT_GAME_WALK_WEST].gamepadBindInfo.button = .Left_Face_Left
+
+	inputInfo[.INPUT_GAME_ATTACK].bindInfo.primaryKey = .M
+	inputInfo[.INPUT_GAME_ATTACK].bindInfo.secondaryKey = nil
+	inputInfo[.INPUT_GAME_ATTACK].bindInfo.state = .DOWN
+	inputInfo[.INPUT_GAME_ATTACK].bindInfo.holdAlt = false
+	inputInfo[.INPUT_GAME_ATTACK].bindInfo.holdControl = false
+	inputInfo[.INPUT_GAME_ATTACK].bindInfo.holdShift = false
+	inputInfo[.INPUT_GAME_ATTACK].gamepadBindInfo.button = .Right_Face_Down
+
+	inputInfo[.INPUT_GAME_ACTION].bindInfo.primaryKey = .N
+	inputInfo[.INPUT_GAME_ACTION].bindInfo.secondaryKey = nil
+	inputInfo[.INPUT_GAME_ACTION].bindInfo.state = .DOWN
+	inputInfo[.INPUT_GAME_ACTION].bindInfo.holdAlt = false
+	inputInfo[.INPUT_GAME_ACTION].bindInfo.holdControl = false
+	inputInfo[.INPUT_GAME_ACTION].bindInfo.holdShift = false
+	inputInfo[.INPUT_GAME_ACTION].gamepadBindInfo.button = .Right_Face_Left
 
 	inputInfo[.INPUT_UI_UP].bindInfo.primaryKey = .Up
 	inputInfo[.INPUT_UI_UP].bindInfo.secondaryKey = nil

@@ -1,8 +1,7 @@
 package karl2d_game
 
-import "core:log"
-
 new_game :: proc() {
+	trace("Starting new game")
 	pop_all_views()
 	player_init()
 	push_view(&GAME_VIEW)

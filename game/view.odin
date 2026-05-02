@@ -1,13 +1,11 @@
 package karl2d_game
 
-// import "core:log"
-// import "core:fmt"
 import "core:container/queue"
 
 View :: struct {
 	Open:    proc(),
 	Close:   proc(),
-	Control: proc(),
+	Control: proc() -> bool, // return true to consume input and prevent views underneath from controlling
 	Render:  proc(),
 }
 
@@ -26,7 +24,7 @@ push_view_back :: proc(view: ^View) {
 }
 
 pop_view :: proc(from := #caller_location) {
-	// fmt.println("Pop called " , from, " #", activeViews.len)
+	tracef("Pop called ", from, " #", activeViews.len)
 	if activeViews.len == 0 do return
 	queue.back_ptr(&activeViews)^.Close()
 	queue.pop_back(&activeViews)
@@ -76,7 +74,7 @@ control_views :: proc() {
 
 		view := queue.get(&activeViews, i)
 		if view.Control != nil {
-			view.Control()
+			if !view.Control() do break
 		}
 		i -= 1
 	}

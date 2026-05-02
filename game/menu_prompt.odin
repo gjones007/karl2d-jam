@@ -1,7 +1,6 @@
 package karl2d_game
 
 import k2 "../../karl2d"
-import "core:log"
 
 menu_prompt_select_callback :: proc(index: int)
 menu_prompt_cancel_callback :: proc()
@@ -39,12 +38,12 @@ open_menu_prompt :: proc(
 	onCancel: menu_prompt_cancel_callback,
 ) {
 	if menu_prompt_file.promptIsOpen {
-		log.error("PROMPT: MenuPrompt is already open")
+		error("PROMPT: MenuPrompt is already open")
 		return
 	}
 
 	if len(options) == 0 {
-		log.error("PROMPT: MenuPrompt requires at least one option")
+		error("PROMPT: MenuPrompt requires at least one option")
 		return
 	}
 
@@ -77,24 +76,24 @@ close_view :: proc() {
 }
 
 @(private = "file")
-control_view :: proc() {
+control_view :: proc() -> bool {
 	if is_input_active(.INPUT_UI_CANCEL) {
 		pop_view()
 		if menu_prompt_file.onCancel != nil {
 			menu_prompt_file.onCancel()
 		}
-		return
+		return true
 	}
 
 	if is_input_active(.INPUT_UI_UP) && menu_prompt_file.selected > 0 {
 		menu_prompt_file.selected -= 1
-		return
+		return true
 	}
 
 	if is_input_active(.INPUT_UI_DOWN) &&
 	   menu_prompt_file.selected < len(menu_prompt_file.options) - 1 {
 		menu_prompt_file.selected += 1
-		return
+		return true
 	}
 
 	if is_input_active(.INPUT_UI_SUBMIT) {
@@ -104,6 +103,7 @@ control_view :: proc() {
 			menu_prompt_file.onSelect(selected)
 		}
 	}
+	return false
 }
 
 @(private = "file")
