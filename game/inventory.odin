@@ -87,3 +87,13 @@ get_inventory_items :: proc(inventory: Inventory_Handle) -> []ItemPrefab {
 	inventory := hm.get(&inventoryEntities, inventory)
 	return inventory.items[:]
 }
+
+has_inventory_item :: proc(inventory: Inventory_Handle, itemPrefab: ItemPrefab) -> bool {
+	inventory := hm.get(&inventoryEntities, inventory)
+	for item in inventory.items {
+		if item == itemPrefab {
+			return true
+		}
+	}
+	return false
+}

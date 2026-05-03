@@ -1,6 +1,9 @@
 package karl2d_game
 
-new_game :: proc() {
+
+//TODO: add selectors for different game modes (arena, mine, etc)
+new_game :: proc(new_map: GameMaps) {
+	selected_map = new_map
 	trace("Starting new game")
 	pop_all_views()
 	player_init()
@@ -29,15 +32,17 @@ exit_menu :: proc() {
 }
 
 init_main_menu :: proc() {
-	main_menu := []string{"New Game", "Options", "Exit Menu"}
+	main_menu := []string{"Arena", "The Cave", "Options", "Exit Menu"}
 
 	main_menu_prompt_select_callback :: proc(index: int) {
 		switch index {
 		case 0:
-			new_game()
+			new_game(.Arena)
 		case 1:
-			options_menu()
+			new_game(.Cave)
 		case 2:
+			options_menu()
+		case 3:
 			exit_menu()
 		}
 	}

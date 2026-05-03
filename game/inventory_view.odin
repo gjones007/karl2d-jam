@@ -103,30 +103,26 @@ render_view :: proc() {
 	items := get_inventory_items(player.inventory)
 	item_count := len(items)
 
-	frame_w := f32(760)
-	frame_padding := f32(22)
-	title_size: f32 = 26
-	cell_h := f32(48)
+	frame_w := UI_MODAL_FRAME_WIDTH
+	frame_padding := UI_FRAME_PADDING
+	title_size := UI_TITLE_SIZE
+	cell_h := UI_BUTTON_HEIGHT
 	row_gap := f32(14)
 	col_gap := f32(18)
 	rows := math.max((item_count + INVENTORY_COLUMNS - 1) / INVENTORY_COLUMNS, 1)
 	grid_h := f32(rows) * cell_h + f32(rows - 1) * row_gap
 	desc_h := f32(74)
-	frame_h := frame_padding + title_size + 16 + grid_h + 16 + desc_h + frame_padding
+	frame_h :=
+		frame_padding + title_size + UI_TITLE_TO_TEXT_GAP + grid_h + 16 + desc_h + frame_padding
 
-	frame_x := (screen.x - frame_w) * 0.5
-	frame_y := (screen.y - frame_h) * 0.5
-
-	k2.draw_rect({0, 0, screen.x, screen.y}, OVERLAY_COLOR)
-	k2.draw_rect({frame_x - 2, frame_y - 2, frame_w + 4, frame_h + 4}, FRAME_BORDER_COLOR)
-	k2.draw_rect({frame_x, frame_y, frame_w, frame_h}, FRAME_COLOR)
+	frame_x, frame_y := ui_draw_modal_frame(frame_w, frame_h)
 
 	title_x := frame_x + frame_padding
 	title_y := frame_y + frame_padding
 	k2.draw_text("Inventory", {title_x, title_y}, title_size, TITLE_COLOR)
 
 	grid_x := frame_x + frame_padding
-	grid_y := title_y + title_size + 16
+	grid_y := title_y + title_size + UI_TITLE_TO_TEXT_GAP
 	grid_w := frame_w - frame_padding * 2
 	cell_w := (grid_w - col_gap) / INVENTORY_COLUMNS
 
@@ -150,7 +146,7 @@ render_view :: proc() {
 			name = fmt.tprintf("%s (Equipped)", name)
 		}
 
-		k2.draw_text(name, {x + 12, y + 12}, 15, fg)
+		k2.draw_text(name, {x + 12, y + UI_BUTTON_LABEL_INSET_Y}, UI_TEXT_SIZE, fg)
 	}
 
 	desc_y := grid_y + grid_h + 16
@@ -158,8 +154,13 @@ render_view :: proc() {
 	k2.draw_rect({grid_x + 2, desc_y + 2, grid_w - 4, desc_h - 4}, FRAME_COLOR)
 
 	if item_count == 0 {
-		k2.draw_text("No items in inventory", {grid_x + 12, desc_y + 14}, 15, ITEM_COLOR)
-		k2.draw_text("Press Esc/Tab to close", {grid_x + 12, desc_y + 36}, 14, ITEM_COLOR)
+		k2.draw_text("No items in inventory", {grid_x + 12, desc_y + 14}, UI_TEXT_SIZE, ITEM_COLOR)
+		k2.draw_text(
+			"Press Esc/Tab to close",
+			{grid_x + 12, desc_y + 36},
+			UI_TEXT_SIZE,
+			ITEM_COLOR,
+		)
 		return
 	}
 
@@ -167,7 +168,12 @@ render_view :: proc() {
 	selected_info := itemPrefab[selected_prefab]
 	type_text := "Type: Weapon" if selected_info.type == .WEAPON else "Type: Item"
 
-	k2.draw_text(selected_info.name, {grid_x + 12, desc_y + 10}, 16, TITLE_COLOR)
-	k2.draw_text(type_text, {grid_x + 12, desc_y + 30}, 14, ITEM_COLOR)
-	k2.draw_text(selected_info.description, {grid_x + 12, desc_y + 48}, 13, ITEM_COLOR)
+	k2.draw_text(selected_info.name, {grid_x + 12, desc_y + 10}, UI_TEXT_SIZE + 1, TITLE_COLOR)
+	k2.draw_text(type_text, {grid_x + 12, desc_y + 30}, UI_TEXT_SIZE, ITEM_COLOR)
+	k2.draw_text(
+		selected_info.description,
+		{grid_x + 12, desc_y + 48},
+		UI_TEXT_SIZE - 1,
+		ITEM_COLOR,
+	)
 }

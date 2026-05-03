@@ -30,6 +30,7 @@ Input :: enum {
 	INPUT_UI_LEFT,
 	INPUT_UI_SUBMIT,
 	INPUT_UI_CANCEL,
+	INPUT_UI_TOGGLE_MAINMENU,
 	INPUT_UI_TOGGLE_INVENTORY,
 	INPUT_QUIT,
 	INPUT_TOGGLE_FULLSCREEN,
@@ -242,6 +243,15 @@ load_default_input_config :: proc() {
 	inputInfo[.INPUT_UI_TOGGLE_INVENTORY].gamepadBindInfo.button = .Middle_Face_Right
 	inputInfo[.INPUT_UI_TOGGLE_INVENTORY].gamepadBindInfo.positive = false
 
+	inputInfo[.INPUT_UI_TOGGLE_MAINMENU].bindInfo.primaryKey = .Escape
+	inputInfo[.INPUT_UI_TOGGLE_MAINMENU].bindInfo.secondaryKey = nil
+	inputInfo[.INPUT_UI_TOGGLE_MAINMENU].bindInfo.state = .PRESSED
+	inputInfo[.INPUT_UI_TOGGLE_MAINMENU].bindInfo.holdAlt = false
+	inputInfo[.INPUT_UI_TOGGLE_MAINMENU].bindInfo.holdControl = false
+	inputInfo[.INPUT_UI_TOGGLE_MAINMENU].bindInfo.holdShift = false
+	inputInfo[.INPUT_UI_TOGGLE_MAINMENU].gamepadBindInfo.button = .Middle_Face_Left
+	inputInfo[.INPUT_UI_TOGGLE_MAINMENU].gamepadBindInfo.positive = false
+
 	inputInfo[.INPUT_QUIT].bindInfo.primaryKey = .Q
 	inputInfo[.INPUT_QUIT].bindInfo.secondaryKey = nil
 	inputInfo[.INPUT_QUIT].bindInfo.state = .PRESSED
@@ -258,13 +268,6 @@ load_default_input_config :: proc() {
 }
 
 update_inputs :: proc() {
-
-	// TODO: remove
-	// if k2.key_went_down(.F1) { neworigin.x += 1; fmt.printf("New origin: %v", neworigin) }
-	// if k2.key_went_down(.F2) { neworigin.x -= 1; fmt.printf("New origin: %v", neworigin) }
-	// if k2.key_went_down(.F3) { neworigin.y += 1; fmt.printf("New origin: %v", neworigin) }
-	// if k2.key_went_down(.F4) { neworigin.y -= 1; fmt.printf("New origin: %v", neworigin) }
-
 	alt_held: bool
 	control_held: bool
 	shift_held: bool

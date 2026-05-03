@@ -14,15 +14,11 @@ ItemData :: struct {
 
 add_item_from_prefabs :: proc(x, y: f32, prefab: ItemPrefab) -> Maybe(Item_Handle) {
 	handle: Maybe(Item_Handle)
-	#partial switch prefab {
-	case .SWORD_GOLD:
-		handle = add_item(x, y, .SWORD_GOLD)
-	case .WORN_PICKAXE:
-		handle = add_item(x, y, .WORN_PICKAXE)
-	case:
-		warnf("Item: Attempted to spawn unknown item prefab %v", prefab)
+	if prefab == .NONE {
+		warnf("Item: Attempted to spawn item with NONE prefab, skipping")
 		return nil
 	}
+	handle = add_item(x, y, prefab)
 	return handle
 }
 

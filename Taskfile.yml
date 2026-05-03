@@ -21,4 +21,6 @@ tasks:
     cmds:
       - tiled --export-tileset ./assets/fullsheet.tsx fullsheet.tsj --minimize
       - tiled --export-map ./assets/mine.tmx ./assets/mine.tmj --minimize
-      - jq -c '.tilesets[].source = "fullsheet.tsj"' ./assets/mine.tmj > ./mine.tmj
+      - tiled --export-map ./assets/new_one.tmx ./assets/arena.tmj --minimize
+      - tiled --export-map ./assets/cave.tmx ./assets/cave.tmj --minimize
+      #- jq -c '.tilesets[].source = "fullsheet.tsj"' ./assets/mine.tmj > ./mine.tmj

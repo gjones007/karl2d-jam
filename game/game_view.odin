@@ -4,6 +4,7 @@ import k2 "../../karl2d"
 import "../tiled"
 import hm "core:/container/handle_map"
 import "core:math"
+import "core:strings"
 
 GAME_VIEW := View {
 	Open    = open_view,
@@ -27,9 +28,53 @@ GameFile: struct {
 	options:                 [dynamic]string,
 	selected:                int,
 	attackResolvedThisSwing: bool,
+	hasExitPoint:            bool,
+	exitTriggered:           bool,
+	exitBlockedShown:        bool,
+	exitPoint:               k2.Vec2,
 } = {}
 
 ATTACK_DAMAGE :: 25
+dumb_lighting := false
+
+on_exit_complete :: proc() {
+	pop_all_views()
+	init_main_menu()
+}
+
+resolve_player_exit :: proc() {
+	if !GameFile.hasExitPoint || GameFile.exitTriggered {
+		return
+	}
+
+	exit_rect := k2.Rect{GameFile.exitPoint.x - 8, GameFile.exitPoint.y - 8, 16, 16}
+	player_rect := k2.Rect{player.x, player.y, 16, 16}
+
+	if _, does := k2.rect_overlap(player_rect, exit_rect); does {
+		if !has_inventory_item(player.inventory, .RUBY_RING) {
+			if !GameFile.exitBlockedShown {
+				GameFile.exitBlockedShown = true
+				init_message_prompt(
+					nil,
+					"The Exit Is Sealed",
+					"Guilt prevents you from leaving. You need the Ruby Ring to leave, Karak paid you for its retrieval.",
+					"Ok",
+				)
+			}
+			return
+		}
+
+		GameFile.exitTriggered = true
+		init_message_prompt(
+			on_exit_complete,
+			"You Escaped!",
+			"With the Ruby Ring in hand, you found the exit and made it out alive. Karak will be pleased, and you can finally rest easy knowing you won't have to go back down there again.",
+			"Main Menu",
+		)
+	} else {
+		GameFile.exitBlockedShown = false
+	}
+}
 
 get_player_attack_rect :: proc(p: Player) -> k2.Rect {
 	r := k2.Rect{p.x, p.y, 16, 16}
@@ -80,17 +125,124 @@ resolve_player_attack_hits :: proc() {
 
 @(private = "file")
 open_view :: proc() {
+	GameFile.hasExitPoint = false
+	GameFile.exitTriggered = false
+	GameFile.exitBlockedShown = false
+	GameFile.exitPoint = {0, 0}
+
 	level_allocator = context.allocator
 	tiled_map, tileset_textures = load_map(level_allocator)
-
 	init_npc_prefabs()
 	init_items_prefabs()
-	player_init()
-	//TODO: testing
-	add_npc_from_prefabs(16 * 4, 16 * 4, .DWARF_MINER)
-	add_item_from_prefabs(16 * 4, 16 * 5, .WORN_PICKAXE)
-	add_npc_from_prefabs(16 * 13, 16 * 15, .MUMMY)
-	add_npc_from_prefabs(16 * 13, 16 * 17, .SPAWNER)
+
+	level_spawn := k2.Vec2{0, 0}
+	for layer in tiled_map.layers {
+		if layer.type == .tilelayer do continue
+		for object in layer.objects {
+			if object.name == "player_spawn" {
+				level_spawn.x = auto_cast object.x
+				level_spawn.y = auto_cast object.y
+			}
+			if object.name == "guide_spawn" {
+				if handle, ok := add_npc_from_prefabs(
+					   auto_cast object.x,
+					   auto_cast object.y,
+					   .DWARF_MINER,
+					   {},
+				   ).?; ok {
+					conversation_handle := Conversation_Handle{}
+					conversation_line := 0
+					for property in tiled_map.properties {
+						if strings.starts_with(property.name, "guide_") {
+							if !hm.is_valid(&conversationEntities, conversation_handle) {
+								conversation_handle = add_conversation("Karak")
+							}
+
+							if property_value, is_string := property.value.(string); is_string {
+								add_conversation_dialogue(
+									conversation_handle,
+									conversation_line,
+									property_value,
+								)
+								conversation_line += 1
+							}
+						}
+					}
+
+					if hm.is_valid(&conversationEntities, conversation_handle) {
+						npc := hm.get(&npcEntities, handle)
+						npc.conversation_handle = conversation_handle
+					}
+				}
+			}
+			spawn_flags :=
+				strings.contains(object.name, "|spawner") ? NPCSpecials{.SPAWNER} : NPCSpecials{}
+			if strings.starts_with(object.name, "bandit_ogre") {
+				add_npc_from_prefabs(
+					auto_cast object.x,
+					auto_cast object.y,
+					.BANDIT_OGRE,
+					spawn_flags,
+				)
+			}
+			if strings.starts_with(object.name, "two_headed_ogre") {
+				add_npc_from_prefabs(
+					auto_cast object.x,
+					auto_cast object.y,
+					.TWO_HEADED_OGRE,
+					spawn_flags,
+				)
+			}
+			if strings.starts_with(object.name, "tiny_ogre") {
+				add_npc_from_prefabs(
+					auto_cast object.x,
+					auto_cast object.y,
+					.TINY_OGRE,
+					spawn_flags,
+				)
+			}
+			if strings.starts_with(object.name, "hat_ogre") {
+				add_npc_from_prefabs(
+					auto_cast object.x,
+					auto_cast object.y,
+					.HAT_OGRE,
+					spawn_flags,
+				)
+			}
+			if strings.starts_with(object.name, "enemy_spawn") {
+				add_npc_from_prefabs(
+					auto_cast object.x,
+					auto_cast object.y,
+					.TINY_OGRE,
+					spawn_flags,
+				)
+			}
+			if object.name == "red_potion" {
+				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .RED_POTION)
+			}
+			if object.name == "green_potion" {
+				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .GREEN_POTION)
+			}
+			if object.name == "silver_sword" {
+				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .SILVER_SWORD)
+			}
+			if object.name == "battleaxe" {
+				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .BATTLEAXE)
+			}
+			if object.name == "ruby_ring" {
+				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .RUBY_RING)
+			}
+			if object.name == "exit" {
+				GameFile.hasExitPoint = true
+				GameFile.exitPoint = {auto_cast object.x, auto_cast object.y}
+			}
+			// if object.name == "chest" {
+			// 	add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .CHEST)
+			// }
+		}
+	}
+
+	player_init(level_spawn)
 
 	camera = k2.Camera {
 		offset = k2.get_screen_size() / 2,
@@ -104,7 +256,14 @@ open_view :: proc() {
 
 @(private = "file")
 control_view :: proc() -> bool {
-	npc_actions(dt)
+	npc_actions(
+		dt,
+		{tiled_map.layers[int(Layers.Walls)]},
+		tiled_map.width,
+		tiled_map.height,
+		tiled_map.tile_width,
+		tiled_map.tile_height,
+	)
 	if player.hp <= 0 {
 		return true
 	}
@@ -118,6 +277,7 @@ control_view :: proc() -> bool {
 		tiled_map.tile_height,
 	)
 	resolve_player_attack_hits()
+	resolve_player_exit()
 	return false
 }
 
@@ -150,18 +310,20 @@ draw_tile_layers :: proc() {
 
 			k2.draw_texture_rect(tileset_textures[tileset_idx], source, {world_x, world_y})
 
-			dist := distance(
-				player.x + 8,
-				player.y + 8,
-				world_x + source.w / 2,
-				world_y + source.h / 2,
-			)
-			alpha := cast(u8)math.remap_clamped(dist, 50, 125, 0, 255)
-			k2.draw_rect_vec(
-				{world_x, world_y},
-				{source.w, source.h},
-				k2.color_alpha(k2.BLACK, alpha),
-			)
+			if dumb_lighting {
+				dist := distance(
+					player.x + 8,
+					player.y + 8,
+					world_x + source.w / 2,
+					world_y + source.h / 2,
+				)
+				alpha := cast(u8)math.remap_clamped(dist, 50, 125, 0, 255)
+				k2.draw_rect_vec(
+					{world_x, world_y},
+					{source.w, source.h},
+					k2.color_alpha(k2.BLACK, alpha),
+				)
+			}
 		}
 	}
 }
@@ -184,11 +346,17 @@ draw_npcs :: proc() {
 	for npc, npc_hm in hm.iterate(&it) {
 		tileset := tiled_map.tilesets[0]
 		texture := tileset_textures[0]
-		tile_id := npcsPrefab[npc.prefab].tile_id - tileset.first_gid
+		tile_id := npc.tile_id - tileset.first_gid
 		tileset_x := f32((tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing))
 		tileset_y := f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
 		source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
-		k2.draw_texture_rect(texture, source, {npc.x, npc.y})
+		// k2.draw_texture_rect(texture, source, {npc.x, npc.y})
+		k2.draw_texture_rect(
+			texture,
+			source,
+			{npc.x, npc.y},
+			tint = npc.hit_cooldown_timer > 0 ? k2.color_alpha(k2.RED, u8(math.cos(npc.hit_cooldown_timer * math.PI * 2) * 255)) : k2.WHITE,
+		)
 	}
 }
 
@@ -217,6 +385,7 @@ render_view :: proc() {
 close_view :: proc() {
 	flush_all_inventories()
 	flush_all_npcs()
+	flush_all_conversations()
 	flush_all_items()
 	unload_map(level_allocator, tileset_textures)
 }

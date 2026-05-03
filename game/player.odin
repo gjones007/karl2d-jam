@@ -47,12 +47,13 @@ Player_Bounds_Width: f32 : 16
 Player_Bounds_Height: f32 : 16
 PLAYER_SWING_DURATION: time.Duration : 200 * time.Millisecond
 SWING_EASING_TYPE: ease.Ease : .Quartic_In
-PLAYER_HIT_COOLDOWN: f32 : 600
+PLAYER_HIT_COOLDOWN: f32 : 1.2
+PLAYER_MAX_HP: i32 : 100
 Player_Swing_Arc: f32 : math.PI / 3
 
-player_init :: proc() {
-	player.x = 16 * 4
-	player.y = 16 * 4
+player_init :: proc(level_spawn: k2.Vec2 = {0, 0}) {
+	player.x = level_spawn.x
+	player.y = level_spawn.y
 	player.facing = .Down
 	player.anim_frame = 0
 	player.anim_timer = 0
@@ -62,20 +63,29 @@ player_init :: proc() {
 	player.attack_rotation = 0
 	player.attack_swing_duration = PLAYER_SWING_DURATION
 	player.inventory = add_inventory()
-	add_inventory_item(player.inventory, .SWORD_GOLD)
-	player.weapon_prefab = .SWORD_GOLD
+	add_inventory_item(player.inventory, .SILVER_SWORD)
+	// add_inventory_item(player.inventory, .BLACK_SWORD)
+	// add_inventory_item(player.inventory, .GOLD_SWORD)
+	// add_inventory_item(player.inventory, .PURPLE_SWORD)
+	// add_inventory_item(player.inventory, .CUTLASS)
+	// add_inventory_item(player.inventory, .CUTLASS2)
+	// add_inventory_item(player.inventory, .AXE)
+	// add_inventory_item(player.inventory, .BATTLEAXE)
+	player.weapon_prefab = .SILVER_SWORD
 	player.flux_map = ease.flux_init(f32)
 	player.hit_cooldown_timer = 0
 }
 
 take_damage_player :: proc(damage: int) {
+	if player.hit_cooldown_timer > 0 do return
+
 	player.hp -= auto_cast damage
 	player.hit_cooldown_timer = PLAYER_HIT_COOLDOWN
 	debugf("Player: Took %d damage, hp is now %d", damage, player.hp)
 	if player.hp <= 0 {
 		debugf("Player: HP is 0 or less, player has died")
 		init_message_prompt(
-			proc() {new_game()},
+			proc() {new_game(selected_map)},
 			"You Died",
 			"You have succumbed to your injuries. Better luck next time!",
 			"Respawn",
@@ -93,40 +103,30 @@ player_attempt_floor_pickup :: proc() {
 		} else {
 			warnf("Player: Failed to remove item at location (x: %v, y: %v)", item.x, item.y)
 		}
-		add_inventory_item(player.inventory, item.prefab)
+
+		if item.prefab == .RED_POTION {
+			heal_amount := itemPrefab[item.prefab].damage
+			player.hp = min(player.hp + auto_cast heal_amount, PLAYER_MAX_HP)
+			debugf("Player: Used Red Potion for %d healing, hp is now %d", heal_amount, player.hp)
+		} else {
+			add_inventory_item(player.inventory, item.prefab)
+		}
 	}
 }
 
-player_attempt_npc_interact :: proc() {
+player_attempt_npc_conversation :: proc() {
 	it := hm.iterator_make(&npcEntities)
 	for npc, npc_handle in hm.iterate(&it) {
 		npc_rect := k2.Rect{npc.x, npc.y, 16, 16}
 		player_rect := k2.Rect{player.x, player.y, 16, 16}
 		if _, does := k2.rect_overlap(npc_rect, player_rect); does {
 			debugf("Player: Attempting to interact with NPC (handle: %v)", npc_handle)
-			if npc.disposition == .Friendly {
-
-				init_bool_prompt(
-					proc() {
-						add_inventory_item(player.inventory, .WORN_PICKAXE)
-						// debugf("Player: Accepted interaction with NPC (handle: %v)", npc_handle)
-						// init_message_prompt(nil, "npc.name", "npc.description")
-						// return true
-					},
-					proc() {
-						// debugf("Player: Declined interaction with NPC (handle: %v)", npc_handle)
-						// return true
-					},
-					"Converse",
-					"Message Text",
-					"Talk",
-					"Leave",
-				)
-
-				// init_message_view(npc.name, npc.description)
+			if hm.is_valid(&conversationEntities, npc.conversation_handle) {
+				debugf("Player: Starting conversation with NPC (handle: %v)", npc_handle)
+				handle_conversation(npc)
 			} else {
 				debugf(
-					"Player: NPC (handle: %v) is not friendly, skipping interaction",
+					"Player: NPC (handle: %v) has no conversation handle, cannot start conversation",
 					npc_handle,
 				)
 			}
@@ -134,7 +134,7 @@ player_attempt_npc_interact :: proc() {
 	}
 }
 
-player_collision_check :: proc(
+movement_collision_check :: proc(
 	x, y: f32,
 	collision_layers: []tiled.Layer,
 	map_width, map_height, tile_width, tile_height: i32,
@@ -182,8 +182,14 @@ update_player_controls :: proc(
 	collision_layers: []tiled.Layer,
 	map_width, map_height, tile_width, tile_height: i32,
 ) {
+	if is_input_active(.INPUT_UI_TOGGLE_INVENTORY) do open_inventory_view()
+	if is_input_active(.INPUT_UI_TOGGLE_MAINMENU) do init_main_menu()
+
 	if player.hit_cooldown_timer > 0 {
 		player.hit_cooldown_timer -= dt
+		if player.hit_cooldown_timer < 0 {
+			player.hit_cooldown_timer = 0
+		}
 	}
 	if p.attacking {
 		// Keep movement enabled while swing easing is active.
@@ -206,10 +212,9 @@ update_player_controls :: proc(
 		play_sound(.ItemPickup)
 
 		// TODO: GOING TO PIGGYBACK ON THIS FOR NOW
-		player_attempt_npc_interact()
+		player_attempt_npc_conversation()
 		return
 	}
-
 
 	if is_input_active(.INPUT_GAME_ATTACK) && !p.attacking {
 		play_sound(.PlayerAttack)
@@ -226,8 +231,6 @@ update_player_controls :: proc(
 	if is_input_active(.INPUT_GAME_WALK_NORTH) do move_y -= input_strength(.INPUT_GAME_WALK_NORTH)
 	if is_input_active(.INPUT_GAME_WALK_SOUTH) do move_y += input_strength(.INPUT_GAME_WALK_SOUTH)
 
-	if is_input_active(.INPUT_UI_TOGGLE_INVENTORY) do open_inventory_view()
-
 	move_len := math.sqrt(move_x * move_x + move_y * move_y)
 	if move_len > 1 {
 		move_x /= move_len
@@ -237,7 +240,7 @@ update_player_controls :: proc(
 	moving := false
 
 	if move_x < 0 &&
-	   !player_collision_check(
+	   !movement_collision_check(
 			   p.x + move_x * Player_Speed * dt,
 			   p.y,
 			   collision_layers,
@@ -250,7 +253,7 @@ update_player_controls :: proc(
 		moving = true
 	}
 	if move_x > 0 &&
-	   !player_collision_check(
+	   !movement_collision_check(
 			   p.x + move_x * Player_Speed * dt,
 			   p.y,
 			   collision_layers,
@@ -263,7 +266,7 @@ update_player_controls :: proc(
 		moving = true
 	}
 	if move_y < 0 &&
-	   !player_collision_check(
+	   !movement_collision_check(
 			   p.x,
 			   p.y + move_y * Player_Speed * dt,
 			   collision_layers,
@@ -276,7 +279,7 @@ update_player_controls :: proc(
 		moving = true
 	}
 	if move_y > 0 &&
-	   !player_collision_check(
+	   !movement_collision_check(
 			   p.x,
 			   p.y + move_y * Player_Speed * dt,
 			   collision_layers,
@@ -326,15 +329,17 @@ player_init_swing_easing :: proc() {
 push_view_player_inventory :: proc(p: ^Player) {
 }
 
-// TODO: remove
-// neworigin := k2.Vec2{8, 14}
-
 draw_player :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
 	tile_id := WalkingAnimation[p.facing][p.anim_frame]
 	tileset_x := f32((tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing))
 	tileset_y := f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
 	source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
-	k2.draw_texture_rect(texture, source, {p.x, p.y})
+	k2.draw_texture_rect(
+		texture,
+		source,
+		{p.x, p.y},
+		tint = p.hit_cooldown_timer > 0 ? k2.color_alpha(k2.RED, u8(math.cos(p.hit_cooldown_timer * math.PI * 2) * 255)) : k2.WHITE,
+	)
 
 	// Draw weapon in front of the player and rotate around the side nearest the player.
 	if p.attacking {
@@ -359,26 +364,32 @@ draw_player :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
 
 		switch p.facing {
 		case .Up:
-			dest.y -= 16
+			dest.y -= 4
+			dest.x += 8
 			origin = {8, 14}
-			base_rotation = -math.PI / 2
+			base_rotation = 0
 			swing_direction = -1
 		case .Down:
 			dest.y += 16
-			origin = {8, 2}
-			base_rotation = math.PI / 2
+			dest.x += 4
+			origin = {2, 8}
+			base_rotation = math.PI * 0.5
 			swing_direction = 1
 		case .Left:
-			dest.x -= 16
-			origin = {14, 8}
-			base_rotation = math.PI
+			dest.y += 8
+			// origin = {14, 8}
+			origin = {8, 14}
+			base_rotation = math.PI * 1.5
 			swing_direction = -1
 		case .Right:
 			dest.x += 16
+			dest.y += 8
 			origin = {2, 8}
 			base_rotation = 0
 			swing_direction = 1
 		}
+
+		weapon_source.w *= itemPrefab[p.weapon_prefab].flip_horizontal ? -1 : 1
 
 		k2.draw_texture_fit(
 			texture,
@@ -391,13 +402,6 @@ draw_player :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
 }
 
 draw_player_ui :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
-	for i in 0 ..< (p.hp + 1) / 25 {
-		tile_id := RED_HEARTS[i]
-
-		tileset_x := f32((tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing))
-		tileset_y := f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
-		source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
-
-		k2.draw_texture_rect(texture, source, {8 + f32(i) * 20, 8})
-	}
+	k2.draw_rect_outline({4, 4, 68, 12}, 2, k2.RED)
+	k2.draw_rect({6, 6, f32(p.hp) * 0.64, 8}, k2.RED)
 }

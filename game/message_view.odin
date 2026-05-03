@@ -1,7 +1,6 @@
 package karl2d_game
 
 import k2 "../../karl2d"
-import "core:strings"
 
 message_callback :: proc()
 
@@ -78,66 +77,53 @@ control_view :: proc() -> bool {
 render_view :: proc() {
 	k2.set_camera(nil)
 
-	screen := k2.get_screen_size()
+	frame_w := UI_MODAL_FRAME_WIDTH
+	frame_padding := UI_FRAME_PADDING
+	title_size := UI_TITLE_SIZE
+	text_size := UI_TEXT_SIZE
+	button_size := UI_BUTTON_TEXT_SIZE
 
-	frame_w := f32(760)
-	frame_padding := f32(24)
-	title_size: f32 = 14
-	text_size: f32 = 13
-	button_size: f32 = 18
-
-	message_chars_per_line := 44
-	message_lines := make([dynamic]string, context.temp_allocator)
+	message_lines := ui_split_message_lines(
+		MessagePrompt.promptMessageText,
+		UI_MESSAGE_CHARS_PER_LINE,
+	)
 	defer delete(message_lines)
 
-	msg := MessagePrompt.promptMessageText
-	for start := 0; start < len(msg); start += message_chars_per_line {
-		end := start + message_chars_per_line
-		if end > len(msg) {
-			end = len(msg)
-		}
-		append(&message_lines, strings.trim_space(msg[start:end]))
-	}
-	if len(message_lines) == 0 {
-		append(&message_lines, "")
-	}
-
-	line_height := text_size + 10
+	line_height := text_size + UI_LINE_GAP
 	message_block_h := f32(len(message_lines)) * line_height + 8
-	button_h := f32(56)
-	frame_h := frame_padding + title_size + 18 + message_block_h + 26 + button_h + frame_padding
+	button_h := UI_BUTTON_HEIGHT
+	frame_h :=
+		frame_padding +
+		title_size +
+		UI_TITLE_TO_TEXT_GAP +
+		message_block_h +
+		UI_TEXT_TO_BUTTON_GAP +
+		button_h +
+		frame_padding
 
-	frame_x := (screen.x - frame_w) * 0.5
-	frame_y := (screen.y - frame_h) * 0.5
-
-	// Dim background behind modal.
-	k2.draw_rect({0, 0, screen.x, screen.y}, OVERLAY_COLOR)
-
-	// Frame + border.
-	k2.draw_rect({frame_x - 2, frame_y - 2, frame_w + 4, frame_h + 4}, FRAME_BORDER_COLOR)
-	k2.draw_rect({frame_x, frame_y, frame_w, frame_h}, FRAME_COLOR)
+	frame_x, frame_y := ui_draw_modal_frame(frame_w, frame_h)
 
 	title_x := frame_x + frame_padding
 	title_y := frame_y + frame_padding
 	k2.draw_text(MessagePrompt.promptTitleText, {title_x, title_y}, title_size, TITLE_COLOR)
 
 	msg_x := frame_x + frame_padding
-	msg_y := title_y + title_size + 18
+	msg_y := title_y + title_size + UI_TITLE_TO_TEXT_GAP
 	for i := 0; i < len(message_lines); i += 1 {
 		y := msg_y + f32(i) * line_height
 		k2.draw_text(message_lines[i], {msg_x, y}, text_size, TEXT_COLOR)
 	}
 
 	button_y := frame_y + frame_h - frame_padding - button_h
-	button_w := f32(180)
+	button_w := UI_BUTTON_WIDTH
 	button_x := frame_x + (frame_w - button_w) * 0.5
 
 	k2.draw_rect({button_x, button_y, button_w, button_h}, ITEM_SELECTED_FG)
 
-	label_inset := f32(16)
+	label_inset := UI_BUTTON_LABEL_INSET_X
 	k2.draw_text(
 		MessagePrompt.promptDismissText,
-		{button_x + label_inset, button_y + 14},
+		{button_x + label_inset, button_y + UI_BUTTON_LABEL_INSET_Y},
 		button_size,
 		ITEM_SELECTED_BG,
 	)

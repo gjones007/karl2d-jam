@@ -4,13 +4,23 @@ import k2 "../../karl2d"
 import "../tiled"
 import "core:mem"
 
-tiled_map_file :: #load("../mine.tmj")
+// tiled_map_file :: #load("../mine.tmj")
 tiled_tileset_file :: #load("../fullsheet.tsj")
 tiled_tileset_image_file :: #load("../assets/fullsheet.png")
+
+tiled_map_arena_file :: #load("../assets/arena.tmj")
+tiled_map_cave_file :: #load("../assets/cave.tmj")
 
 tiled_map: tiled.Map
 tileset_textures: []k2.Texture
 level_allocator: mem.Allocator
+selected_map: GameMaps = .Arena
+
+GameMaps :: enum {
+	// Mine,
+	Arena,
+	Cave,
+}
 
 Layers :: enum {
 	Ground,
@@ -20,7 +30,15 @@ Layers :: enum {
 }
 
 load_map :: proc(alloc: mem.Allocator) -> (tiled_map: tiled.Map, tileset_textures: []k2.Texture) {
-	tiled_map = tiled.parse_tilemap(tiled_map_file, alloc)
+	switch selected_map {
+	// case .Mine:
+	// 	tiled_map = tiled.parse_tilemap(tiled_map_file, alloc)
+	case .Arena:
+		tiled_map = tiled.parse_tilemap(tiled_map_arena_file, alloc)
+	case .Cave:
+		tiled_map = tiled.parse_tilemap(tiled_map_cave_file, alloc)
+	}
+
 	tileset_textures = make_slice([]k2.Texture, len(tiled_map.tilesets), alloc)
 
 	for i in 0 ..< len(tiled_map.tilesets) {

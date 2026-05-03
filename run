@@ -1,0 +1,3 @@
+#!/bin/bash
+#gdb -q -batch -ex run -ex bt --args ./game.bin
+/d/nnd ./game.bin

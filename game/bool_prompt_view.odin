@@ -1,7 +1,6 @@
 package karl2d_game
 
 import k2 "../../karl2d"
-import "core:strings"
 
 bool_prompt_callback :: proc()
 
@@ -107,59 +106,46 @@ control_view :: proc() -> bool {
 render_view :: proc() {
 	k2.set_camera(nil)
 
-	screen := k2.get_screen_size()
+	frame_w := UI_MODAL_FRAME_WIDTH
+	frame_padding := UI_FRAME_PADDING
+	title_size := UI_TITLE_SIZE
+	text_size := UI_TEXT_SIZE
+	button_size := UI_BUTTON_TEXT_SIZE
 
-	frame_w := f32(760)
-	frame_padding := f32(24)
-	title_size: f32 = 40
-	text_size: f32 = 30
-	button_size: f32 = 28
-
-	message_chars_per_line := 44
-	message_lines := make([dynamic]string, context.temp_allocator)
+	message_lines := ui_split_message_lines(
+		BoolPromptFile.promptMessageText,
+		UI_MESSAGE_CHARS_PER_LINE,
+	)
 	defer delete(message_lines)
 
-	msg := BoolPromptFile.promptMessageText
-	for start := 0; start < len(msg); start += message_chars_per_line {
-		end := start + message_chars_per_line
-		if end > len(msg) {
-			end = len(msg)
-		}
-		append(&message_lines, strings.trim_space(msg[start:end]))
-	}
-	if len(message_lines) == 0 {
-		append(&message_lines, "")
-	}
-
-	line_height := text_size + 10
+	line_height := text_size + UI_LINE_GAP
 	message_block_h := f32(len(message_lines)) * line_height + 8
-	button_h := f32(56)
-	frame_h := frame_padding + title_size + 18 + message_block_h + 26 + button_h + frame_padding
+	button_h := UI_BUTTON_HEIGHT
+	frame_h :=
+		frame_padding +
+		title_size +
+		UI_TITLE_TO_TEXT_GAP +
+		message_block_h +
+		UI_TEXT_TO_BUTTON_GAP +
+		button_h +
+		frame_padding
 
-	frame_x := (screen.x - frame_w) * 0.5
-	frame_y := (screen.y - frame_h) * 0.5
-
-	// Dim background behind modal.
-	k2.draw_rect({0, 0, screen.x, screen.y}, OVERLAY_COLOR)
-
-	// Frame + border.
-	k2.draw_rect({frame_x - 2, frame_y - 2, frame_w + 4, frame_h + 4}, FRAME_BORDER_COLOR)
-	k2.draw_rect({frame_x, frame_y, frame_w, frame_h}, FRAME_COLOR)
+	frame_x, frame_y := ui_draw_modal_frame(frame_w, frame_h)
 
 	title_x := frame_x + frame_padding
 	title_y := frame_y + frame_padding
 	k2.draw_text(BoolPromptFile.promptTitleText, {title_x, title_y}, title_size, TITLE_COLOR)
 
 	msg_x := frame_x + frame_padding
-	msg_y := title_y + title_size + 18
+	msg_y := title_y + title_size + UI_TITLE_TO_TEXT_GAP
 	for i := 0; i < len(message_lines); i += 1 {
 		y := msg_y + f32(i) * line_height
 		k2.draw_text(message_lines[i], {msg_x, y}, text_size, TEXT_COLOR)
 	}
 
 	button_y := frame_y + frame_h - frame_padding - button_h
-	button_w := f32(180)
-	button_gap := f32(24)
+	button_w := UI_BUTTON_WIDTH
+	button_gap := UI_BUTTON_GAP
 	total_buttons_w := button_w * 2 + button_gap
 	button_start_x := frame_x + (frame_w - total_buttons_w) * 0.5
 
@@ -177,16 +163,16 @@ render_view :: proc() {
 	k2.draw_rect({accept_x, button_y, button_w, button_h}, accept_bg)
 	k2.draw_rect({decline_x, button_y, button_w, button_h}, decline_bg)
 
-	label_inset := f32(16)
+	label_inset := UI_BUTTON_LABEL_INSET_X
 	k2.draw_text(
 		BoolPromptFile.promptAcceptText,
-		{accept_x + label_inset, button_y + 14},
+		{accept_x + label_inset, button_y + UI_BUTTON_LABEL_INSET_Y},
 		button_size,
 		accept_fg,
 	)
 	k2.draw_text(
 		BoolPromptFile.promptDeclineText,
-		{decline_x + label_inset, button_y + 14},
+		{decline_x + label_inset, button_y + UI_BUTTON_LABEL_INSET_Y},
 		button_size,
 		decline_fg,
 	)
