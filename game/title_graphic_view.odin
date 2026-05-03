@@ -21,6 +21,8 @@ open_view :: proc() {
 
 @(private = "file")
 control_view :: proc() -> bool {
+	// should never get here, if menu pops
+	init_main_menu()
 	return false
 }
 

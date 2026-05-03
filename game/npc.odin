@@ -4,6 +4,7 @@ import k2 "../../karl2d"
 
 import "../tiled"
 import hm "core:/container/handle_map"
+import "core:math"
 import la "core:math/linalg"
 import "core:math/rand"
 
@@ -49,6 +50,10 @@ add_npc_from_prefabs :: proc(
 		warnf("NPC: Attempted to spawn NPC with NONE prefab, skipping")
 		return nil
 	}
+	if .SPAWNER in specials && npcsPrefab[prefab].spawn_prefab == .NONE {
+		npcsPrefab[prefab].spawn_prefab = prefab
+		return nil
+	}
 	if handle, ok = add_npc(
 		   x,
 		   y,
@@ -78,6 +83,15 @@ npc_actions :: proc(
 
 		if .SPAWNER in npc.specials {
 			npc.spawner_timer -= dt
+
+			spawn_rate := npcsPrefab[npc.prefab].spawn_rate
+			if spawn_rate > 0 {
+				elapsed := spawn_rate - npc.spawner_timer
+				phase := (math.sin(elapsed * math.PI * 2) + 1) * 0.5
+				// Reuse hit_cooldown_timer as a normalized pulse alpha signal for rendering.
+				npc.hit_cooldown_timer = math.remap_clamped(phase, 0, 1, 0.2, 1.0)
+			}
+
 			if npc.spawner_timer <= 0 {
 				npc.spawner_timer = npcsPrefab[npc.prefab].spawn_rate
 				add_npc_from_prefabs(npc.x, npc.y, npcsPrefab[npc.prefab].spawn_prefab, {})

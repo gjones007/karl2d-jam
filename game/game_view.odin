@@ -176,7 +176,7 @@ open_view :: proc() {
 				}
 			}
 			spawn_flags :=
-				strings.contains(object.name, "|spawner") ? NPCSpecials{.SPAWNER} : NPCSpecials{}
+				strings.contains(object.name, "spawner") ? NPCSpecials{.SPAWNER} : NPCSpecials{}
 			if strings.starts_with(object.name, "bandit_ogre") {
 				add_npc_from_prefabs(
 					auto_cast object.x,
@@ -198,6 +198,14 @@ open_view :: proc() {
 					auto_cast object.x,
 					auto_cast object.y,
 					.TINY_OGRE,
+					spawn_flags,
+				)
+			}
+			if strings.starts_with(object.name, "round_ogre") {
+				add_npc_from_prefabs(
+					auto_cast object.x,
+					auto_cast object.y,
+					.ROUND_OGRE,
 					spawn_flags,
 				)
 			}
@@ -350,13 +358,25 @@ draw_npcs :: proc() {
 		tileset_x := f32((tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing))
 		tileset_y := f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
 		source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
-		// k2.draw_texture_rect(texture, source, {npc.x, npc.y})
-		k2.draw_texture_rect(
-			texture,
-			source,
-			{npc.x, npc.y},
-			tint = npc.hit_cooldown_timer > 0 ? k2.color_alpha(k2.RED, u8(math.cos(npc.hit_cooldown_timer * math.PI * 2) * 255)) : k2.WHITE,
-		)
+
+		tint := k2.WHITE
+		if npc.hit_cooldown_timer > 0 {
+			alpha: u8
+			if .SPAWNER in npc.specials {
+				alpha = cast(u8)math.remap_clamped(npc.hit_cooldown_timer, 0.0, 1.0, 0.0, 255.0)
+			} else {
+				alpha = cast(u8)math.remap_clamped(
+					npc.hit_cooldown_timer,
+					0.0,
+					PLAYER_HIT_COOLDOWN,
+					0.0,
+					255.0,
+				)
+			}
+			tint = k2.color_alpha(k2.RED, alpha)
+		}
+
+		k2.draw_texture_rect(texture, source, {npc.x, npc.y}, tint = tint)
 	}
 }
 

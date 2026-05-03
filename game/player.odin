@@ -41,7 +41,7 @@ WalkingAnimation := [Facing][4]i32 {
 	.Right = {5041, 5042, 5043, 5044},
 }
 
-Player_Speed: f32 : 100
+Player_Speed: f32 : 85
 Player_Frame_Duration: f32 : 0.12
 Player_Bounds_Width: f32 : 16
 Player_Bounds_Height: f32 : 16
@@ -305,7 +305,7 @@ update_player_controls :: proc(
 		if p.anim_timer >= Player_Frame_Duration {
 			p.anim_timer -= Player_Frame_Duration
 			p.anim_frame = (p.anim_frame + 1) % 4
-			play_sound(.PlayerWalk)
+			// play_sound(.PlayerWalk)
 		}
 	} else {
 		p.anim_frame = 0

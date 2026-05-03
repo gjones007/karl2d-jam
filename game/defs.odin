@@ -284,7 +284,7 @@ init_npc_prefabs :: proc() {
 		damage      = 15,
 		disposition = .Hostile,
 		tile_id     = TINY_OGRE,
-		move_speed  = 30.0,
+		move_speed  = 87.0,
 		spawn_rate  = 20.0,
 	}
 	npcsPrefab[.HAT_OGRE] = NPCPrefabInfo {

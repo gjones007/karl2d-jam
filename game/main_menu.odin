@@ -8,6 +8,9 @@ new_game :: proc(new_map: GameMaps) {
 	pop_all_views()
 	player_init()
 	push_view(&GAME_VIEW)
+	if new_map == .Cave {
+		push_view(&AUDIO_VIEW)
+	}
 }
 
 options_menu :: proc() {
@@ -32,14 +35,14 @@ exit_menu :: proc() {
 }
 
 init_main_menu :: proc() {
-	main_menu := []string{"Arena", "The Cave", "Options", "Exit Menu"}
+	main_menu := []string{"The Cave", "Arena", "Options", "Exit Menu"}
 
 	main_menu_prompt_select_callback :: proc(index: int) {
 		switch index {
 		case 0:
-			new_game(.Arena)
-		case 1:
 			new_game(.Cave)
+		case 1:
+			new_game(.Arena)
 		case 2:
 			options_menu()
 		case 3:
