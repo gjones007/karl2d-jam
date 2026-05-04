@@ -5,6 +5,7 @@ import k2 "../../karl2d"
 message_callback :: proc()
 
 MESSAGE_DEFAULT_DISMISS :: "Ok"
+MESSAGE_DISENGAGE_RADIUS :: 25.0
 
 MESSAGE_PROMPT_VIEW := View {
 	Open    = open_view,
@@ -21,6 +22,7 @@ MessagePrompt: struct {
 	promptMessageText: string,
 	promptDismissText: string,
 	promptDidDismiss:  bool,
+	disenageCenter:    k2.Vec2,
 } = {}
 
 init_message_prompt :: proc(
@@ -40,6 +42,7 @@ init_message_prompt :: proc(
 	MessagePrompt.promptTitleText = titleText
 	MessagePrompt.promptMessageText = messageText
 	MessagePrompt.promptDismissText = len(dismissText) > 0 ? dismissText : MESSAGE_DEFAULT_DISMISS
+	MessagePrompt.disenageCenter = k2.Vec2{player.x, player.y}
 
 	push_view(&MESSAGE_PROMPT_VIEW)
 }
@@ -67,6 +70,16 @@ control_view :: proc() -> bool {
 	if (is_input_active(.INPUT_UI_CANCEL)) {
 		pop_view()
 	} else if (is_input_active(.INPUT_UI_SUBMIT)) {
+		pop_view()
+	}
+
+	if distance(
+		   player.x,
+		   player.y,
+		   MessagePrompt.disenageCenter.x,
+		   MessagePrompt.disenageCenter.y,
+	   ) >
+	   MESSAGE_DISENGAGE_RADIUS {
 		pop_view()
 	}
 

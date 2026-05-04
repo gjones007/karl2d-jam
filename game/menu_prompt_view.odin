@@ -19,8 +19,6 @@ menu_prompt_file: struct {
 	selected:     int,
 	onSelect:     menu_prompt_select_callback,
 	onCancel:     menu_prompt_cancel_callback,
-
-	// renderCtx: ^k2.Context,
 } = {}
 
 open_menu_prompt :: proc(
@@ -69,23 +67,20 @@ close_view :: proc() {
 
 @(private = "file")
 control_view :: proc() -> bool {
-	if is_input_active(.INPUT_UI_CANCEL) {
+	if is_input_active(.INPUT_UI_CANCEL) || is_input_active(.INPUT_UI_TOGGLE_MAINMENU) {
 		pop_view()
 		if menu_prompt_file.onCancel != nil {
 			menu_prompt_file.onCancel()
 		}
-		return true
 	}
 
 	if is_input_active(.INPUT_UI_UP) && menu_prompt_file.selected > 0 {
 		menu_prompt_file.selected -= 1
-		return true
 	}
 
 	if is_input_active(.INPUT_UI_DOWN) &&
 	   menu_prompt_file.selected < len(menu_prompt_file.options) - 1 {
 		menu_prompt_file.selected += 1
-		return true
 	}
 
 	if is_input_active(.INPUT_UI_SUBMIT) {

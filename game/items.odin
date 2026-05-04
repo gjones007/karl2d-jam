@@ -36,7 +36,7 @@ add_item :: proc(x, y: f32, prefab: ItemPrefab) -> Maybe(Item_Handle) {
 }
 
 remove_item :: proc(handle: Item_Handle) -> bool {
-	if ok, err := hm.remove(&itemEntities, handle); err != nil {
+	if _, err := hm.remove(&itemEntities, handle); err != nil {
 		debugf("Item: Removed item (handle: %v)", handle)
 		return true
 	} else {

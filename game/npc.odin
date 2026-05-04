@@ -73,7 +73,7 @@ npc_actions :: proc(
 	map_width, map_height, tile_width, tile_height: i32,
 ) {
 	it := hm.iterator_make(&npcEntities)
-	for npc, npc_handle in hm.iterate(&it) {
+	for npc, _ in hm.iterate(&it) {
 		if npc.hit_cooldown_timer > 0 {
 			npc.hit_cooldown_timer -= dt
 			if npc.hit_cooldown_timer < 0 {
@@ -131,7 +131,7 @@ npc_move_towards_player :: proc(
 	collision_layers: []tiled.Layer,
 	map_width, map_height, tile_width, tile_height: i32,
 ) {
-	dir := la.normalize(cast(la.Vector2f32){player.x - data.x, player.y - data.y})
+	dir := la.normalize0([2]f32{player.x - data.x, player.y - data.y})
 	move_x := dir.x * data.move_speed * dt
 	move_y := dir.y * data.move_speed * dt
 
@@ -185,20 +185,6 @@ npc_move_towards_player :: proc(
 	}
 }
 
-// TODO: account for walls and other obstacles, attack range, etc.
-npc_should_move_towards_player :: proc(npc: NPCData) -> bool {
-	if npc.disposition != .Hostile {
-		return false
-	}
-	if !npc_can_see_player(npc) {
-		return false
-	}
-	if distance(npc.x, npc.y, player.x, player.y) < 16 {
-		return false
-	}
-	return true
-}
-
 npc_can_see_player :: proc(npc: NPCData) -> bool {
 	distance := distance(npc.x, npc.y, player.x, player.y)
 	if distance > 1000 {
@@ -234,7 +220,12 @@ add_npc :: proc(
 			},
 		)
 		creature := hm.get(&npcEntities, npc)
-		debugf("NPC: Spawned NPC (handle: %v, disposition: %v)", npc, creature.disposition)
+		debugf(
+			"NPC: Spawned .SPAWNER NPC (handle: %v, prefab: %v, disposition: %v)",
+			npc,
+			creature.prefab,
+			creature.disposition,
+		)
 		play_sound(.EnemySpawn)
 		return npc
 	} else {
@@ -285,7 +276,7 @@ take_damage_npc :: proc(handle: NPC_Handle, damage: int) {
 }
 
 remove_npc :: proc(handle: NPC_Handle) -> bool {
-	if ok, err := hm.remove(&npcEntities, handle); err != nil {
+	if _, err := hm.remove(&npcEntities, handle); err != nil {
 		debugf("NPC: Removed NPC (handle: %v)", handle)
 		return true
 	} else {

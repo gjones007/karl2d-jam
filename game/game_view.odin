@@ -37,11 +37,6 @@ GameFile: struct {
 ATTACK_DAMAGE :: 25
 dumb_lighting := false
 
-on_exit_complete :: proc() {
-	pop_all_views()
-	init_main_menu()
-}
-
 resolve_player_exit :: proc() {
 	if !GameFile.hasExitPoint || GameFile.exitTriggered {
 		return
@@ -66,7 +61,7 @@ resolve_player_exit :: proc() {
 
 		GameFile.exitTriggered = true
 		init_message_prompt(
-			on_exit_complete,
+			proc() {set_view(&TITLE_GRAPHIC_VIEW)},
 			"You Escaped!",
 			"With the Ruby Ring in hand, you found the exit and made it out alive. Karak will be pleased, and you can finally rest easy knowing you won't have to go back down there again.",
 			"Main Menu",
@@ -150,7 +145,7 @@ open_view :: proc() {
 					   .DWARF_MINER,
 					   {},
 				   ).?; ok {
-					conversation_handle := Conversation_Handle{}
+					conversation_handle: Conversation_Handle
 					conversation_line := 0
 					for property in tiled_map.properties {
 						if strings.starts_with(property.name, "guide_") {
@@ -240,6 +235,9 @@ open_view :: proc() {
 			if object.name == "ruby_ring" {
 				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .RUBY_RING)
 			}
+			if object.name == "pickaxe" {
+				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .WORN_PICKAXE)
+			}
 			if object.name == "exit" {
 				GameFile.hasExitPoint = true
 				GameFile.exitPoint = {auto_cast object.x, auto_cast object.y}
@@ -292,10 +290,10 @@ control_view :: proc() -> bool {
 draw_tile_layers :: proc() {
 	for layer in tiled_map.layers {
 		if layer.type != .tilelayer do continue
-		for gid, i in layer.data {
-			if gid == 0 do continue
+		for ggid, i in layer.data {
+			if ggid == 0 do continue
 
-			gid, flags := tiled.strip_flags(gid)
+			gid, flags := tiled.strip_flags(ggid)
 			tileset, tileset_idx := tiled.get_tileset_from_gid(tiled_map.tilesets, gid)
 			if tileset == nil do continue
 			if tileset_idx < 0 || tileset_idx >= len(tileset_textures) do continue
@@ -318,6 +316,7 @@ draw_tile_layers :: proc() {
 
 			k2.draw_texture_rect(tileset_textures[tileset_idx], source, {world_x, world_y})
 
+			// TODO: too slow
 			if dumb_lighting {
 				dist := distance(
 					player.x + 8,
@@ -338,7 +337,7 @@ draw_tile_layers :: proc() {
 
 draw_items :: proc() {
 	it := hm.iterator_make(&itemEntities)
-	for item, item_hm in hm.iterate(&it) {
+	for item, _ in hm.iterate(&it) {
 		tileset := tiled_map.tilesets[0]
 		texture := tileset_textures[0]
 		tile_id := itemPrefab[item.prefab].tile_id - tileset.first_gid
@@ -346,12 +345,35 @@ draw_items :: proc() {
 		tileset_y := f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
 		source: k2.Rect = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
 		k2.draw_texture_rect(texture, source, {item.x, item.y})
+
+		if distance(player.x + 8, player.y + 8, item.x + 8, item.y + 8) < 24 {
+			tile_id = SEE_ICON - tileset.first_gid
+			tileset_x = f32((tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing))
+			tileset_y = f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
+			source = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
+
+			alpha := cast(u8)math.remap_clamped(
+				distance(player.x + 8, player.y + 8, item.x + 8, item.y + 8),
+				0,
+				50,
+				0,
+				255,
+			)
+			k2.draw_texture_fit(
+				texture,
+				source,
+				{item.x, item.y, 8, 8},
+				{-8, 8},
+				tint = k2.color_alpha(k2.WHITE, 255 - alpha),
+			)
+		}
+
 	}
 }
 
 draw_npcs :: proc() {
 	it := hm.iterator_make(&npcEntities)
-	for npc, npc_hm in hm.iterate(&it) {
+	for npc, _ in hm.iterate(&it) {
 		tileset := tiled_map.tilesets[0]
 		texture := tileset_textures[0]
 		tile_id := npc.tile_id - tileset.first_gid
@@ -377,6 +399,35 @@ draw_npcs :: proc() {
 		}
 
 		k2.draw_texture_rect(texture, source, {npc.x, npc.y}, tint = tint)
+
+		if npc.disposition == .Friendly &&
+		   hm.is_valid(&conversationEntities, npc.conversation_handle) {
+			{
+				tile_id = TALK_ICON - tileset.first_gid
+				tileset_x = f32(
+					(tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing),
+				)
+				tileset_y = f32(
+					(tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing),
+				)
+				source = {tileset_x, tileset_y, f32(tileset.tile_width), f32(tileset.tile_height)}
+
+				alpha := cast(u8)math.remap_clamped(
+					distance(player.x + 8, player.y + 8, npc.x + 8, npc.y + 8),
+					0,
+					50,
+					0,
+					255,
+				)
+				k2.draw_texture_fit(
+					texture,
+					source,
+					{npc.x, npc.y, 8, 8},
+					{-8, 8},
+					tint = k2.color_alpha(k2.YELLOW, 255 - alpha),
+				)
+			}
+		}
 	}
 }
 
@@ -390,8 +441,6 @@ render_view :: proc() {
 	camera.offset = k2.get_screen_size() / 2
 
 	k2.set_camera(camera)
-
-	screen_rect := k2.rect_from_pos_size({}, k2.get_screen_size())
 
 	draw_tile_layers()
 	draw_items()
@@ -410,6 +459,7 @@ close_view :: proc() {
 	unload_map(level_allocator, tileset_textures)
 }
 
+// manhattan distance, copied from another project... might change this
 distance :: proc(start_x, start_y, end_x, end_y: f32) -> f32 {
 	dx := f32(math.max(start_x, end_x) - math.min(start_x, end_x))
 	dy := f32(math.max(start_y, end_y) - math.min(start_y, end_y))

@@ -9,35 +9,36 @@ TITLE_GRAPHIC_VIEW := View {
 	Render  = render_view,
 }
 
+TITLE :: "First Quest"
+
 @(private = "file")
-camera: k2.Camera
-@(private = "file")
-current_item_index: int
+text_measured: k2.Vec2
 
 @(private = "file")
 open_view :: proc() {
-
+	text_measured = k2.measure_text(TITLE, 40) / 2
+	if !is_view_open(&MENU_PROMPT_VIEW) do init_main_menu()
 }
 
 @(private = "file")
 control_view :: proc() -> bool {
-	// should never get here, if menu pops
-	init_main_menu()
+	if !is_view_open(&MENU_PROMPT_VIEW) do init_main_menu()
 	return false
 }
 
 @(private = "file")
 close_view :: proc() {
-	camera = k2.Camera {
-		// offset = k2.get_screen_size() / 2,
-		// zoom   = 3,
-	}
 }
 
 @(private = "file")
 render_view :: proc() {
 	k2.clear(k2.ORANGE)
-	k2.set_camera(camera)
+	k2.set_camera(nil)
 	screen := k2.get_screen_size()
-	k2.draw_text("TITLE SCREEN", {screen.x / 2, 20}, 40, k2.WHITE)
+	k2.draw_text(
+		TITLE,
+		{screen.x / 2 - text_measured.x, screen.y / 4 - text_measured.y},
+		40,
+		k2.GREEN,
+	)
 }

@@ -4,7 +4,6 @@ import k2 "../../karl2d"
 import "../tiled"
 import "core:mem"
 
-// tiled_map_file :: #load("../mine.tmj")
 tiled_tileset_file :: #load("../fullsheet.tsj")
 tiled_tileset_image_file :: #load("../assets/fullsheet.png")
 
@@ -31,8 +30,6 @@ Layers :: enum {
 
 load_map :: proc(alloc: mem.Allocator) -> (tiled_map: tiled.Map, tileset_textures: []k2.Texture) {
 	switch selected_map {
-	// case .Mine:
-	// 	tiled_map = tiled.parse_tilemap(tiled_map_file, alloc)
 	case .Arena:
 		tiled_map = tiled.parse_tilemap(tiled_map_arena_file, alloc)
 	case .Cave:

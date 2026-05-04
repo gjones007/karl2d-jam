@@ -1,6 +1,5 @@
 package karl2d_game
 
-// import "core:log"
 import k2 "../../karl2d"
 
 main :: proc() {
@@ -10,18 +9,11 @@ main :: proc() {
 }
 
 init :: proc() {
-	when ODIN_OS != .JS {
-		context.logger = init_logger()
-	}
-
-	k2.init(1000, 636, "Karl2D Game Demo")
+	k2.init(1000, 636, "First Quest")
 
 	load_default_input_config()
-	init_npc_prefabs()
 	sounds_init()
-	// push_view(&GAME_VIEW)
-	push_view(&TITLE_GRAPHIC_VIEW)
-	init_main_menu()
+	set_view(&TITLE_GRAPHIC_VIEW)
 }
 
 step :: proc() -> bool {
@@ -45,8 +37,6 @@ step :: proc() -> bool {
 
 shutdown :: proc() {
 	pop_all_views()
+	sounds_shutdown()
 	k2.shutdown()
-	when ODIN_OS != .JS {
-		delete_logger(context.logger)
-	}
 }

@@ -1,7 +1,6 @@
 package karl2d_game
 
 import k2 "../../karl2d"
-import "core:fmt"
 
 Gamepad_Deadzone: f32 : 0.2
 
@@ -21,7 +20,7 @@ Input :: enum {
 	INPUT_GAME_WALK_WEST,
 	INPUT_GAME_JUMP,
 	INPUT_GAME_ATTACK,
-	INPUT_GAME_ACTION,
+	// INPUT_GAME_ACTION,
 	// INPUT_GAME_NEXT_WEAPON,
 	// INPUT_GAME_PREV_WEAPON,
 	INPUT_UI_UP,
@@ -63,10 +62,6 @@ inputPulseMinDownTime: f64
 inputPulseCooldown: f64
 
 inputInfo: [Input]InputStruct
-
-init_input :: proc() {
-	load_default_input_config()
-}
 
 is_input_active :: proc(input: Input) -> bool {
 	return inputInfo[input].stateInfo.active
@@ -162,13 +157,13 @@ load_default_input_config :: proc() {
 	inputInfo[.INPUT_GAME_ATTACK].bindInfo.holdShift = false
 	inputInfo[.INPUT_GAME_ATTACK].gamepadBindInfo.button = .Right_Face_Down
 
-	inputInfo[.INPUT_GAME_ACTION].bindInfo.primaryKey = .N
-	inputInfo[.INPUT_GAME_ACTION].bindInfo.secondaryKey = nil
-	inputInfo[.INPUT_GAME_ACTION].bindInfo.state = .DOWN
-	inputInfo[.INPUT_GAME_ACTION].bindInfo.holdAlt = false
-	inputInfo[.INPUT_GAME_ACTION].bindInfo.holdControl = false
-	inputInfo[.INPUT_GAME_ACTION].bindInfo.holdShift = false
-	inputInfo[.INPUT_GAME_ACTION].gamepadBindInfo.button = .Right_Face_Left
+	// inputInfo[.INPUT_GAME_ACTION].bindInfo.primaryKey = .N
+	// inputInfo[.INPUT_GAME_ACTION].bindInfo.secondaryKey = nil
+	// inputInfo[.INPUT_GAME_ACTION].bindInfo.state = .DOWN
+	// inputInfo[.INPUT_GAME_ACTION].bindInfo.holdAlt = false
+	// inputInfo[.INPUT_GAME_ACTION].bindInfo.holdControl = false
+	// inputInfo[.INPUT_GAME_ACTION].bindInfo.holdShift = false
+	// inputInfo[.INPUT_GAME_ACTION].gamepadBindInfo.button = .Right_Face_Left
 
 	// inputInfo[.INPUT_GAME_NEXT_WEAPON].bindInfo.primaryKey = .Left_Bracket
 	// inputInfo[.INPUT_GAME_NEXT_WEAPON].bindInfo.secondaryKey = nil
@@ -187,7 +182,7 @@ load_default_input_config :: proc() {
 	// inputInfo[.INPUT_GAME_PREV_WEAPON].gamepadBindInfo.axis = .Right_Trigger
 
 	inputInfo[.INPUT_UI_UP].bindInfo.primaryKey = .Up
-	inputInfo[.INPUT_UI_UP].bindInfo.secondaryKey = nil
+	inputInfo[.INPUT_UI_UP].bindInfo.secondaryKey = .W
 	inputInfo[.INPUT_UI_UP].bindInfo.state = .DOWN_PULSE
 	inputInfo[.INPUT_UI_UP].bindInfo.holdAlt = false
 	inputInfo[.INPUT_UI_UP].bindInfo.holdControl = false
@@ -195,7 +190,7 @@ load_default_input_config :: proc() {
 	inputInfo[.INPUT_UI_UP].gamepadBindInfo.button = .Left_Face_Up
 
 	inputInfo[.INPUT_UI_RIGHT].bindInfo.primaryKey = .Right
-	inputInfo[.INPUT_UI_RIGHT].bindInfo.secondaryKey = nil
+	inputInfo[.INPUT_UI_RIGHT].bindInfo.secondaryKey = .D
 	inputInfo[.INPUT_UI_RIGHT].bindInfo.state = .DOWN_PULSE
 	inputInfo[.INPUT_UI_RIGHT].bindInfo.holdAlt = false
 	inputInfo[.INPUT_UI_RIGHT].bindInfo.holdControl = false
@@ -203,7 +198,7 @@ load_default_input_config :: proc() {
 	inputInfo[.INPUT_UI_RIGHT].gamepadBindInfo.button = .Left_Face_Right
 
 	inputInfo[.INPUT_UI_DOWN].bindInfo.primaryKey = .Down
-	inputInfo[.INPUT_UI_DOWN].bindInfo.secondaryKey = nil
+	inputInfo[.INPUT_UI_DOWN].bindInfo.secondaryKey = .S
 	inputInfo[.INPUT_UI_DOWN].bindInfo.state = .DOWN_PULSE
 	inputInfo[.INPUT_UI_DOWN].bindInfo.holdAlt = false
 	inputInfo[.INPUT_UI_DOWN].bindInfo.holdControl = false
@@ -211,7 +206,7 @@ load_default_input_config :: proc() {
 	inputInfo[.INPUT_UI_DOWN].gamepadBindInfo.button = .Left_Face_Down
 
 	inputInfo[.INPUT_UI_LEFT].bindInfo.primaryKey = .Left
-	inputInfo[.INPUT_UI_LEFT].bindInfo.secondaryKey = nil
+	inputInfo[.INPUT_UI_LEFT].bindInfo.secondaryKey = .A
 	inputInfo[.INPUT_UI_LEFT].bindInfo.state = .DOWN_PULSE
 	inputInfo[.INPUT_UI_LEFT].bindInfo.holdAlt = false
 	inputInfo[.INPUT_UI_LEFT].bindInfo.holdControl = false

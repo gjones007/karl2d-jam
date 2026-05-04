@@ -18,13 +18,16 @@ push_view_front :: proc(view: ^View) {
 	view.Open()
 }
 
+// make vet happy
+_ :: push_view_front
+
 push_view_back :: proc(view: ^View) {
 	queue.push_back(&activeViews, view)
 	view.Open()
 }
 
 pop_view :: proc(from := #caller_location) {
-	tracef("Pop called ", from, " #", activeViews.len)
+	infof("Pop called ", from, " #", activeViews.len)
 	if activeViews.len == 0 do return
 	queue.back_ptr(&activeViews)^.Close()
 	queue.pop_back(&activeViews)
@@ -52,10 +55,6 @@ is_view_open :: proc(view: ^View) -> bool {
 	}
 	return false
 
-}
-
-count_views :: proc() -> uint {
-	return activeViews.len
 }
 
 control_views :: proc() {

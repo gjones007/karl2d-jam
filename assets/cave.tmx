@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="80" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="23">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="80" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="24">
  <properties>
   <property name="guide_goal_text" value="Ok, swordsman, I have paid you the gold, get my ruby ring back."/>
   <property name="guide_text" value="That ring’s been in my family for generations… please, don’t let it be lost to these caves."/>
@@ -154,6 +154,9 @@
    <point/>
   </object>
   <object id="22" name="tiny_ogre|spawner" x="299.333" y="194">
+   <point/>
+  </object>
+  <object id="23" name="pickaxe" x="1049" y="421.5">
    <point/>
   </object>
  </objectgroup>

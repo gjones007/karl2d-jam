@@ -73,7 +73,11 @@ WORN_PICKAXE: i32 = 8266 // these are off by 1 ??
 GOOD_PICKAXE: i32 = 8267
 PERFECT_PICKAXE: i32 = 8268
 
+PUNCHING_BAG: i32 = 6905
+
 DWARF_MINER: i32 = 5206
+TALK_ICON: i32 = 479
+SEE_ICON: i32 = 477
 
 MUMMY: i32 = 263
 SPAWNER: i32 = 8531
@@ -174,15 +178,6 @@ init_items_prefabs :: proc() {
 		damage          = 25,
 		flip_horizontal = true,
 	}
-	// itemPrefab[.AXE] = ItemPrefabInfo {
-	// 	type            = .WEAPON,
-	// 	name            = "Axe",
-	// 	description     = "A sharp axe.",
-	// 	tile_id         = AXE,
-	// 	swing_speed     = 200 * time.Millisecond,
-	// 	damage          = 28,
-	// 	flip_horizontal = true,
-	// }
 	itemPrefab[.BATTLEAXE] = ItemPrefabInfo {
 		type            = .WEAPON,
 		name            = "Battleaxe",
@@ -234,12 +229,12 @@ NPCPrefab :: enum {
 	NONE,
 	DWARF_MINER,
 	MUMMY,
+	PUNCHING_BAG,
 	TINY_OGRE,
 	HAT_OGRE,
 	BANDIT_OGRE,
 	ROUND_OGRE,
 	TWO_HEADED_OGRE,
-	// SPAWNER,
 }
 
 NPCPrefabInfo :: struct {
@@ -326,5 +321,15 @@ init_npc_prefabs :: proc() {
 		tile_id     = TWO_HEADED_OGRE,
 		move_speed  = 15.0,
 		spawn_rate  = 70.0,
+	}
+	npcsPrefab[.PUNCHING_BAG] = NPCPrefabInfo {
+		name        = "Punching Bag",
+		description = "A punching bag for training purposes.",
+		health      = 10,
+		damage      = 0,
+		disposition = .Neutral,
+		tile_id     = PUNCHING_BAG,
+		move_speed  = 10.0,
+		spawn_rate  = 0.0,
 	}
 }

@@ -6,16 +6,12 @@ import "core:slice"
 
 SoundsEnum :: enum {
 	None,
-	PlayerWalk,
-	// PlayerJump,
-	// PlayerLand,
 	PlayerHurt,
 	PlayerAttack,
 	EnemyHit,
 	EnemyDeath,
 	ItemPickup,
 	EnemySpawn,
-	// BackgroundMusic,
 }
 
 sounds: [SoundsEnum]k2.Sound
@@ -43,14 +39,16 @@ play_sound :: proc(s: SoundsEnum) {
 }
 
 sounds_init :: proc() {
-	rfxgen(.PlayerWalk)
-	// rfxgen(.PlayerJump)
-	// rfxgen(.PlayerLand)
 	rfxgen(.PlayerAttack)
 	rfxgen(.PlayerHurt)
 	rfxgen(.EnemyHit)
 	rfxgen(.EnemyDeath)
 	rfxgen(.ItemPickup)
 	rfxgen(.EnemySpawn)
-	// rfxgen(.BackgroundMusic)
+}
+
+sounds_shutdown :: proc() {
+	for s in SoundsEnum {
+		k2.destroy_sound(sounds[s])
+	}
 }

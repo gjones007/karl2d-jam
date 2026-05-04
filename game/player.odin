@@ -7,8 +7,6 @@ import "core:math"
 import "core:math/ease"
 import "core:time"
 
-import "core:fmt"
-
 player: Player
 
 Player :: struct {
@@ -58,19 +56,12 @@ player_init :: proc(level_spawn: k2.Vec2 = {0, 0}) {
 	player.anim_frame = 0
 	player.anim_timer = 0
 	player.hp = 100
-	player.inventory = {0, 0}
 	player.swing_timer = 0
 	player.attack_rotation = 0
 	player.attack_swing_duration = PLAYER_SWING_DURATION
 	player.inventory = add_inventory()
 	add_inventory_item(player.inventory, .SILVER_SWORD)
-	// add_inventory_item(player.inventory, .BLACK_SWORD)
-	// add_inventory_item(player.inventory, .GOLD_SWORD)
-	// add_inventory_item(player.inventory, .PURPLE_SWORD)
-	// add_inventory_item(player.inventory, .CUTLASS)
-	// add_inventory_item(player.inventory, .CUTLASS2)
-	// add_inventory_item(player.inventory, .AXE)
-	// add_inventory_item(player.inventory, .BATTLEAXE)
+	// add_inventory_item(player.inventory, .RUBY_RING)
 	player.weapon_prefab = .SILVER_SWORD
 	player.flux_map = ease.flux_init(f32)
 	player.hit_cooldown_timer = 0
@@ -85,11 +76,10 @@ take_damage_player :: proc(damage: int) {
 	if player.hp <= 0 {
 		debugf("Player: HP is 0 or less, player has died")
 		init_message_prompt(
-			proc() {new_game(selected_map)},
+			proc() {set_view(&TITLE_GRAPHIC_VIEW)},
 			"You Died",
 			"You have succumbed to your injuries. Better luck next time!",
 			"Respawn",
-			// "Main Menu",
 		)
 	}
 }
@@ -324,9 +314,6 @@ player_init_swing_easing :: proc() {
 		SWING_EASING_TYPE,
 		player.attack_swing_duration,
 	)
-}
-
-push_view_player_inventory :: proc(p: ^Player) {
 }
 
 draw_player :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {

@@ -8,6 +8,10 @@ tasks:
       - task: maps
       - task: build
 
+  vet:
+    cmds:
+      - odin check ./game --vet -vet-packages:karl2d_game -vet-unused-procedures
+
   build:
     cmds:
       - odin run ../karl2d/build_web -- ./game -o:minimal

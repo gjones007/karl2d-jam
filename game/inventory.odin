@@ -32,7 +32,7 @@ add_inventory_item :: proc(
 
 	for i in 0 ..< len(inventory.items) {
 		if inventory.items[i] == .NONE {
-			tracef(
+			infof(
 				"INVENTORY: Adding item %v to inventory %v at index %d",
 				itemPrefab,
 				inventory.handle,
@@ -65,7 +65,7 @@ remove_inventory_item :: proc(
 
 	for i in 0 ..< len(inventory.items) {
 		if inventory.items[i] == itemPrefab {
-			tracef(
+			infof(
 				"INVENTORY: Removing item %v from inventory %v at index %d",
 				itemPrefab,
 				inventory.handle,
@@ -82,6 +82,8 @@ remove_inventory_item :: proc(
 
 	return removed
 }
+
+_ :: remove_inventory_item
 
 get_inventory_items :: proc(inventory: Inventory_Handle) -> []ItemPrefab {
 	inventory := hm.get(&inventoryEntities, inventory)

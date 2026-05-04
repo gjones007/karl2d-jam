@@ -1,21 +1,20 @@
-#+build !js
 package karl2d_game
 
-import "core:log"
+import log "../../karl2d/log"
 
-error :: log.error
-errorf :: log.errorf
-warn :: log.warn
+debugf :: log.debug
+infof :: log.infof
 warnf :: log.warnf
-trace :: log.info
-tracef :: log.infof
+errorf :: log.errorf
+fatalf :: log.fatalf
 debug :: log.debug
-debugf :: log.debugf
-
-init_logger :: proc() -> log.Logger {
-	return log.create_console_logger(lowest = .Debug, opt = {.Procedure, .Line})
-}
-
-delete_logger :: proc(logger: log.Logger) {
-	log.destroy_console_logger(logger)
-}
+info :: log.info
+warn :: log.warn
+error :: log.error
+fatal :: log.fatal
+panic :: log.panic
+panicf :: log.panicf
+assert :: log.assert
+assertf :: log.assertf
+ensure :: log.ensure
+ensuref :: log.ensuref

@@ -99,7 +99,6 @@ control_view :: proc() -> bool {
 @(private = "file")
 render_view :: proc() {
 	k2.set_camera(nil)
-	screen := k2.get_screen_size()
 	items := get_inventory_items(player.inventory)
 	item_count := len(items)
 
