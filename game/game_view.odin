@@ -3,7 +3,10 @@ package karl2d_game
 import k2 "../../karl2d"
 import "../tiled"
 import hm "core:/container/handle_map"
+// import json "core:encoding/json"
 import "core:math"
+// import "core:os"
+import "core:reflect"
 import "core:strings"
 
 GAME_VIEW := View {
@@ -16,10 +19,7 @@ GAME_VIEW := View {
 @(private = "file")
 dt: f32
 @(private = "file")
-camera: k2.Camera
-@(private = "file")
-ui_camera: k2.Camera
-
+game_camera: k2.Camera
 
 @(private = "file")
 GameFile: struct {
@@ -42,8 +42,8 @@ resolve_player_exit :: proc() {
 		return
 	}
 
-	exit_rect := k2.Rect{GameFile.exitPoint.x - 8, GameFile.exitPoint.y - 8, 16, 16}
-	player_rect := k2.Rect{player.x, player.y, 16, 16}
+	exit_rect := k2.Rect{GameFile.exitPoint.x - 8, GameFile.exitPoint.y - 8, TILE_SIZE, TILE_SIZE}
+	player_rect := k2.Rect{player.x, player.y, TILE_SIZE, TILE_SIZE}
 
 	if _, does := k2.rect_overlap(player_rect, exit_rect); does {
 		if !has_inventory_item(player.inventory, .RUBY_RING) {
@@ -72,16 +72,16 @@ resolve_player_exit :: proc() {
 }
 
 get_player_attack_rect :: proc(p: Player) -> k2.Rect {
-	r := k2.Rect{p.x, p.y, 16, 16}
+	r := k2.Rect{p.x, p.y, TILE_SIZE, TILE_SIZE}
 	switch p.facing {
 	case .Up:
-		r.y -= 16
+		r.y -= TILE_SIZE
 	case .Down:
-		r.y += 16
+		r.y += TILE_SIZE
 	case .Left:
-		r.x -= 16
+		r.x -= TILE_SIZE
 	case .Right:
-		r.x += 16
+		r.x += TILE_SIZE
 	}
 	return r
 }
@@ -99,7 +99,7 @@ resolve_player_attack_hits :: proc() {
 
 	it := hm.iterator_make(&npcEntities)
 	for npc, npc_handle in hm.iterate(&it) {
-		npc_rect := k2.Rect{npc.x, npc.y, 16, 16}
+		npc_rect := k2.Rect{npc.x, npc.y, TILE_SIZE, TILE_SIZE}
 		if _, does := k2.rect_overlap(attack_rect, npc_rect); does {
 			if npc.disposition == .Friendly {
 				debugf("Player attack hit friendly NPC (handle: %v), ignoring", npc_handle)
@@ -134,11 +134,11 @@ open_view :: proc() {
 	for layer in tiled_map.layers {
 		if layer.type == .tilelayer do continue
 		for object in layer.objects {
-			if object.name == "player_spawn" {
+			if object.name == "PLAYER_SPAWN" {
 				level_spawn.x = auto_cast object.x
 				level_spawn.y = auto_cast object.y
 			}
-			if object.name == "guide_spawn" {
+			if object.name == "GUIDE_SPAWN" {
 				if handle, ok := add_npc_from_prefabs(
 					   auto_cast object.x,
 					   auto_cast object.y,
@@ -170,98 +170,131 @@ open_view :: proc() {
 					}
 				}
 			}
-			spawn_flags :=
-				strings.contains(object.name, "spawner") ? NPCSpecials{.SPAWNER} : NPCSpecials{}
-			if strings.starts_with(object.name, "bandit_ogre") {
-				add_npc_from_prefabs(
-					auto_cast object.x,
-					auto_cast object.y,
-					.BANDIT_OGRE,
-					spawn_flags,
-				)
-			}
-			if strings.starts_with(object.name, "two_headed_ogre") {
-				add_npc_from_prefabs(
-					auto_cast object.x,
-					auto_cast object.y,
-					.TWO_HEADED_OGRE,
-					spawn_flags,
-				)
-			}
-			if strings.starts_with(object.name, "tiny_ogre") {
-				add_npc_from_prefabs(
-					auto_cast object.x,
-					auto_cast object.y,
-					.TINY_OGRE,
-					spawn_flags,
-				)
-			}
-			if strings.starts_with(object.name, "round_ogre") {
-				add_npc_from_prefabs(
-					auto_cast object.x,
-					auto_cast object.y,
-					.ROUND_OGRE,
-					spawn_flags,
-				)
-			}
-			if strings.starts_with(object.name, "hat_ogre") {
-				add_npc_from_prefabs(
-					auto_cast object.x,
-					auto_cast object.y,
-					.HAT_OGRE,
-					spawn_flags,
-				)
-			}
-			if strings.starts_with(object.name, "enemy_spawn") {
-				add_npc_from_prefabs(
-					auto_cast object.x,
-					auto_cast object.y,
-					.TINY_OGRE,
-					spawn_flags,
-				)
-			}
-			if object.name == "red_potion" {
-				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .RED_POTION)
-			}
-			if object.name == "green_potion" {
-				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .GREEN_POTION)
-			}
-			if object.name == "silver_sword" {
-				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .SILVER_SWORD)
-			}
-			if object.name == "battleaxe" {
-				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .BATTLEAXE)
-			}
-			if object.name == "ruby_ring" {
-				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .RUBY_RING)
-			}
-			if object.name == "pickaxe" {
-				add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .WORN_PICKAXE)
-			}
-			if object.name == "exit" {
+			if object.name == "EXIT" {
 				GameFile.hasExitPoint = true
 				GameFile.exitPoint = {auto_cast object.x, auto_cast object.y}
 			}
-			// if object.name == "chest" {
-			// 	add_item_from_prefabs(auto_cast object.x, auto_cast object.y, .CHEST)
-			// }
+
+			loop: {
+				s := strings.split(object.name, ".", allocator = context.temp_allocator)
+				debugf("Split object name into %v parts", len(s))
+				switch s[0] {
+				case "N":
+					debugf("Checking NPC prefab against object name %v", s[1])
+					for npc in NPCPrefab {
+						debugf("Checking NPC prefab %v against object name %v", npc, s[1])
+						flags := NPCSpecials{}
+						if reflect.enum_string(npc) == s[1] {
+							for flag in s[2:] {
+								for specials in SpecialFlags {
+									if reflect.enum_string(specials) == flag {
+										flags += {specials}
+									}
+								}
+							}
+							debugf(
+								"Spawning NPC from prefab %v at (%v, %v)",
+								npc,
+								object.x,
+								object.y,
+								flags,
+							)
+							add_npc_from_prefabs(
+								auto_cast object.x,
+								auto_cast object.y,
+								npc,
+								flags,
+							)
+							break loop
+						}
+					}
+
+				case "I":
+					for item in ItemPrefab {
+						debugf("Checking Item prefab %v against object name %v", item, s[1])
+						if reflect.enum_string(item) == s[1] {
+							debugf(
+								"Spawning Item from prefab %v at (%v, %v)",
+								item,
+								object.x,
+								object.y,
+							)
+							add_item_from_prefabs(auto_cast object.x, auto_cast object.y, item)
+							break loop
+						}
+					}
+				}
+			}
 		}
 	}
 
 	player_init(level_spawn)
 
-	camera = k2.Camera {
+	game_camera = k2.Camera {
 		offset = k2.get_screen_size() / 2,
 		zoom   = 3,
 	}
-	ui_camera = k2.Camera {
-		// offset = k2.get_screen_size() / 2,
-		zoom = 2,
-	}
+}
+
+// SAVEGAME :: "savegame.json"
+
+// save_game :: proc() {
+// 	save_data := struct {
+// 		player: Player,
+// 	} {
+// 		player = player,
+// 	}
+
+// 	if bytes, marshal_err := json.marshal(save_data, opt = {pretty = true}); marshal_err != nil {
+// 		debugf(marshal_err)
+// 	} else {
+// 		if err := os.write_entire_file("savegame.json", bytes); err != nil {
+// 			debugf("Error saving game: %v", err)
+// 		} else {
+// 			debugf("Game saved successfully")
+// 		}
+// 	}
+// }
+
+load_game :: proc() {
+	// json_str, err := k2.load_file("savegame.json", context.temp_allocator)
+	// if err != nil {
+	// 	debugf("Error loading game: %v", err)
+	// 	return
+	// }
+
+	// save_data := struct {
+	// 	player: Player,
+	// }{}
+
+	// err = json.unmarshal(json_str, &save_data)
+	// if err != nil {
+	// 	debugf("Error unmarshaling save data: %v", err)
+	// 	return
+	// }
+
+	// player = save_data.player
+	// debugf("Game loaded successfully")
 }
 
 @(private = "file")
 control_view :: proc() -> bool {
+	when ODIN_OS != .JS {
+		if k2.key_went_down(.F1) {
+			if !is_view_open(&GAME_CONTROL_VIEW) {
+				push_view(&GAME_CONTROL_VIEW)
+			} else {
+				pop_view()
+			}
+		}
+	}
+	// if k2.key_went_down(.S) && k2.key_is_held(.Left_Control) {
+	// 	save_game()
+	// }
+	// if k2.key_went_down(.L) && k2.key_is_held([.Left_Control]) {
+	// 	load_game()		
+	// }
+
 	npc_actions(
 		dt,
 		{tiled_map.layers[int(Layers.Walls)]},
@@ -287,57 +320,61 @@ control_view :: proc() -> bool {
 	return false
 }
 
-draw_tile_layers :: proc() {
+draw_tile_layers :: proc(camera: k2.Camera) {
+	top_left := k2.screen_to_world(k2.Vec2{}, camera)
+	bottom_right := k2.screen_to_world(k2.get_screen_size(), camera)
+
 	for layer in tiled_map.layers {
 		if layer.type != .tilelayer do continue
-		for ggid, i in layer.data {
-			if ggid == 0 do continue
+		tileset := &tiled_map.tilesets[0]
 
-			gid, flags := tiled.strip_flags(ggid)
-			tileset, tileset_idx := tiled.get_tileset_from_gid(tiled_map.tilesets, gid)
-			if tileset == nil do continue
-			if tileset_idx < 0 || tileset_idx >= len(tileset_textures) do continue
-			if tileset.columns <= 0 || tileset.tile_width <= 0 || tileset.tile_height <= 0 do continue
+		for y in int(
+			top_left.y / f32(tileset.tile_height),
+		) ..< int(bottom_right.y / f32(tileset.tile_height)) + 1 {
+			for x in int(
+				top_left.x / f32(tileset.tile_width),
+			) ..< int(bottom_right.x / f32(tileset.tile_width)) + 1 {
 
-			tile_id := gid - tileset.first_gid
-			world_x := f32((i32(i) % tiled_map.width) * tileset.tile_width)
-			world_y := f32((i32(i) / tiled_map.width) * tileset.tile_height)
-			tileset_x := f32((tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing))
-			tileset_y := f32((tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing))
-			source: k2.Rect = {
-				tileset_x,
-				tileset_y,
-				f32(tileset.tile_width),
-				f32(tileset.tile_height),
-			}
+				if y < 0 || y >= int(tiled_map.height) || x < 0 || x >= int(tiled_map.width) do continue
 
-			if .flip_horizontal in flags do source.w *= -1
-			if .flip_vertical in flags do source.h *= -1
+				ggid := layer.data[y * int(tiled_map.width) + x]
+				gid, flags := tiled.strip_flags(ggid)
+				// if tileset.columns <= 0 || tileset.tile_width <= 0 || tileset.tile_height <= 0 do continue
 
-			k2.draw_texture_rect(tileset_textures[tileset_idx], source, {world_x, world_y})
+				i := y * int(tiled_map.width) + x
 
-			// TODO: too slow
-			if dumb_lighting {
-				dist := distance(
-					player.x + 8,
-					player.y + 8,
-					world_x + source.w / 2,
-					world_y + source.h / 2,
+				tile_id := gid - tileset.first_gid
+				world_x := f32((i32(i) % tiled_map.width) * tileset.tile_width)
+				world_y := f32((i32(i) / tiled_map.width) * tileset.tile_height)
+				tileset_x := f32(
+					(tile_id % tileset.columns) * (tileset.tile_width + tileset.spacing),
 				)
-				alpha := cast(u8)math.remap_clamped(dist, 50, 125, 0, 255)
-				k2.draw_rect_vec(
-					{world_x, world_y},
-					{source.w, source.h},
-					k2.color_alpha(k2.BLACK, alpha),
+				tileset_y := f32(
+					(tile_id / tileset.columns) * (tileset.tile_height + tileset.spacing),
 				)
+				source: k2.Rect = {
+					tileset_x,
+					tileset_y,
+					f32(tileset.tile_width),
+					f32(tileset.tile_height),
+				}
+
+				if .flip_horizontal in flags do source.w *= -1
+				if .flip_vertical in flags do source.h *= -1
+				k2.draw_texture_rect(tileset_textures[0], source, {world_x, world_y})
 			}
 		}
 	}
 }
 
-draw_items :: proc() {
+draw_items :: proc(camera: k2.Camera) {
+	top_left := k2.screen_to_world(k2.Vec2{}, camera)
+	bottom_right := k2.screen_to_world(k2.get_screen_size(), camera)
+
 	it := hm.iterator_make(&itemEntities)
 	for item, _ in hm.iterate(&it) {
+		if item.x + TILE_SIZE < top_left.x || item.x > bottom_right.x || item.y + TILE_SIZE < top_left.y || item.y > bottom_right.y do continue
+
 		tileset := tiled_map.tilesets[0]
 		texture := tileset_textures[0]
 		tile_id := itemPrefab[item.prefab].tile_id - tileset.first_gid
@@ -367,13 +404,17 @@ draw_items :: proc() {
 				tint = k2.color_alpha(k2.WHITE, 255 - alpha),
 			)
 		}
-
 	}
 }
 
-draw_npcs :: proc() {
+draw_npcs :: proc(camera: k2.Camera) {
+	top_left := k2.screen_to_world(k2.Vec2{}, camera)
+	bottom_right := k2.screen_to_world(k2.get_screen_size(), camera)
+
 	it := hm.iterator_make(&npcEntities)
 	for npc, _ in hm.iterate(&it) {
+		if npc.x + TILE_SIZE < top_left.x || npc.x > bottom_right.x || npc.y + TILE_SIZE < top_left.y || npc.y > bottom_right.y do continue
+
 		tileset := tiled_map.tilesets[0]
 		texture := tileset_textures[0]
 		tile_id := npc.tile_id - tileset.first_gid
@@ -436,15 +477,15 @@ render_view :: proc() {
 	dt = k2.get_frame_time()
 
 	// camera.target is the center of the camera in world coordinates
-	camera.target.x = player.x + 8
-	camera.target.y = player.y + 8
-	camera.offset = k2.get_screen_size() / 2
+	game_camera.target.x = player.x + 8
+	game_camera.target.y = player.y + 8
+	game_camera.offset = k2.get_screen_size() / 2
 
-	k2.set_camera(camera)
+	k2.set_camera(game_camera)
 
-	draw_tile_layers()
-	draw_items()
-	draw_npcs()
+	draw_tile_layers(game_camera)
+	draw_items(game_camera)
+	draw_npcs(game_camera)
 	draw_player(tiled_map.tilesets[0], tileset_textures[0], player)
 	k2.set_camera(ui_camera)
 	draw_player_ui(tiled_map.tilesets[0], tileset_textures[0], player)

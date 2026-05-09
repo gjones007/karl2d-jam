@@ -1,5 +1,7 @@
 package karl2d_game
 
+import k2 "../../karl2d"
+import "core:encoding/cbor"
 import "core:time"
 
 OVERLAY_COLOR :: [4]u8{0, 0, 0, 115}
@@ -11,7 +13,12 @@ ITEM_COLOR :: [4]u8{214, 222, 237, 255}
 ITEM_SELECTED_BG :: [4]u8{232, 196, 71, 255}
 ITEM_SELECTED_FG :: [4]u8{28, 20, 8, 255}
 
+
 // Shared UI layout tokens used by modal-like views.
+ui_camera: k2.Camera = {
+	zoom = 1,
+}
+
 UI_FRAME_PADDING: f32 : 24
 UI_MODAL_FRAME_WIDTH: f32 : 760
 UI_MENU_FRAME_WIDTH: f32 : 520
@@ -27,6 +34,8 @@ UI_TITLE_TO_TEXT_GAP: f32 : 18
 UI_TEXT_TO_BUTTON_GAP: f32 : 24
 UI_BUTTON_LABEL_INSET_X: f32 : 16
 UI_BUTTON_LABEL_INSET_Y: f32 : 12
+
+TILE_SIZE :: 16
 
 RED_HEARTS := [?]i32{162, 163, 164, 165}
 GREEN_HEARTS := [?]i32{263, 264, 265, 266}

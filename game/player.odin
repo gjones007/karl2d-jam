@@ -15,9 +15,18 @@ Player :: struct {
 	anim_frame:            int,
 	anim_timer:            f32,
 	weapon_prefab:         ItemPrefab,
+	specials:              NPCSpecials,
 	attacking:             bool,
 	attack_rotation:       f32,
 	hit_cooldown_timer:    f32,
+	stamina:               f32,
+	base_max_speed:        f32,
+	max_speed:             f32, // current max speed, can be modified by buffs/debuffs
+	accel:                 f32,
+	friction:              f32,
+	turn_accel:            f32,
+	vel_x:                 f32,
+	vel_y:                 f32,
 	swing_timer:           time.Duration,
 	attack_swing_duration: time.Duration,
 	flux_map:              ease.Flux_Map(f32),
@@ -39,11 +48,10 @@ WalkingAnimation := [Facing][4]i32 {
 	.Right = {5041, 5042, 5043, 5044},
 }
 
-Player_Speed: f32 : 85
 Player_Frame_Duration: f32 : 0.12
-Player_Bounds_Width: f32 : 16
-Player_Bounds_Height: f32 : 16
-PLAYER_SWING_DURATION: time.Duration : 200 * time.Millisecond
+Player_Bounds_Width: f32 : TILE_SIZE
+Player_Bounds_Height: f32 : TILE_SIZE
+PLAYER_SWING_DURATION: time.Duration : 150 * time.Millisecond
 SWING_EASING_TYPE: ease.Ease : .Quartic_In
 PLAYER_HIT_COOLDOWN: f32 : 1.2
 PLAYER_MAX_HP: i32 : 100
@@ -56,6 +64,14 @@ player_init :: proc(level_spawn: k2.Vec2 = {0, 0}) {
 	player.anim_frame = 0
 	player.anim_timer = 0
 	player.hp = 100
+	player.stamina = 100
+	player.base_max_speed = 90
+	player.max_speed = player.base_max_speed
+	player.accel = 900
+	player.friction = 1800
+	player.turn_accel = 2600
+	player.vel_x = 0
+	player.vel_y = 0
 	player.swing_timer = 0
 	player.attack_rotation = 0
 	player.attack_swing_duration = PLAYER_SWING_DURATION
@@ -68,6 +84,7 @@ player_init :: proc(level_spawn: k2.Vec2 = {0, 0}) {
 }
 
 take_damage_player :: proc(damage: int) {
+	if .IMMORTAL in player.specials do return
 	if player.hit_cooldown_timer > 0 do return
 
 	player.hp -= auto_cast damage
@@ -107,8 +124,8 @@ player_attempt_floor_pickup :: proc() {
 player_attempt_npc_conversation :: proc() {
 	it := hm.iterator_make(&npcEntities)
 	for npc, npc_handle in hm.iterate(&it) {
-		npc_rect := k2.Rect{npc.x, npc.y, 16, 16}
-		player_rect := k2.Rect{player.x, player.y, 16, 16}
+		npc_rect := k2.Rect{npc.x, npc.y, TILE_SIZE, TILE_SIZE}
+		player_rect := k2.Rect{player.x, player.y, TILE_SIZE, TILE_SIZE}
 		if _, does := k2.rect_overlap(npc_rect, player_rect); does {
 			debugf("Player: Attempting to interact with NPC (handle: %v)", npc_handle)
 			if hm.is_valid(&conversationEntities, npc.conversation_handle) {
@@ -164,6 +181,16 @@ movement_collision_check :: proc(
 	}
 
 	return false
+}
+
+approach_f32 :: proc(current, target, max_delta: f32) -> f32 {
+	if current < target {
+		return min(current + max_delta, target)
+	}
+	if current > target {
+		return max(current - max_delta, target)
+	}
+	return current
 }
 
 update_player_controls :: proc(
@@ -227,11 +254,55 @@ update_player_controls :: proc(
 		move_y /= move_len
 	}
 
+	run_strength := input_strength(.INPUT_GAME_RUN)
+	target_speed := p.max_speed
+	if run_strength > 0 && p.stamina > 0 {
+		target_speed = p.max_speed + 40 * run_strength
+		p.stamina -= 30 * dt * run_strength
+		if p.stamina < 0 {
+			p.stamina = 0
+		}
+	} else {
+		p.stamina += 20 * dt
+		if p.stamina > 100 {
+			p.stamina = 100
+		}
+	}
+
+	if move_len > 0 {
+		desired_vel_x := move_x * target_speed
+		desired_vel_y := move_y * target_speed
+
+		dot := p.vel_x * desired_vel_x + p.vel_y * desired_vel_y
+		accel_rate := p.accel
+		if dot < 0 {
+			accel_rate = p.turn_accel
+		}
+
+		max_delta := accel_rate * dt
+		p.vel_x = approach_f32(p.vel_x, desired_vel_x, max_delta)
+		p.vel_y = approach_f32(p.vel_y, desired_vel_y, max_delta)
+	} else {
+		friction_delta := p.friction * dt
+		p.vel_x = approach_f32(p.vel_x, 0, friction_delta)
+		p.vel_y = approach_f32(p.vel_y, 0, friction_delta)
+	}
+
+	vel_len := math.sqrt(p.vel_x * p.vel_x + p.vel_y * p.vel_y)
+	if vel_len > target_speed && vel_len > 0 {
+		scale := target_speed / vel_len
+		p.vel_x *= scale
+		p.vel_y *= scale
+	}
+
+	dx := p.vel_x * dt
+	dy := p.vel_y * dt
+
 	moving := false
 
-	if move_x < 0 &&
+	if dx < 0 &&
 	   !movement_collision_check(
-			   p.x + move_x * Player_Speed * dt,
+			   p.x + dx,
 			   p.y,
 			   collision_layers,
 			   map_width,
@@ -239,12 +310,14 @@ update_player_controls :: proc(
 			   tile_width,
 			   tile_height,
 		   ) {
-		p.x += move_x * Player_Speed * dt
+		p.x += dx
 		moving = true
+	} else if dx < 0 {
+		p.vel_x = 0
 	}
-	if move_x > 0 &&
+	if dx > 0 &&
 	   !movement_collision_check(
-			   p.x + move_x * Player_Speed * dt,
+			   p.x + dx,
 			   p.y,
 			   collision_layers,
 			   map_width,
@@ -252,41 +325,47 @@ update_player_controls :: proc(
 			   tile_width,
 			   tile_height,
 		   ) {
-		p.x += move_x * Player_Speed * dt
+		p.x += dx
 		moving = true
+	} else if dx > 0 {
+		p.vel_x = 0
 	}
-	if move_y < 0 &&
+	if dy < 0 &&
 	   !movement_collision_check(
 			   p.x,
-			   p.y + move_y * Player_Speed * dt,
+			   p.y + dy,
 			   collision_layers,
 			   map_width,
 			   map_height,
 			   tile_width,
 			   tile_height,
 		   ) {
-		p.y += move_y * Player_Speed * dt
+		p.y += dy
 		moving = true
+	} else if dy < 0 {
+		p.vel_y = 0
 	}
-	if move_y > 0 &&
+	if dy > 0 &&
 	   !movement_collision_check(
 			   p.x,
-			   p.y + move_y * Player_Speed * dt,
+			   p.y + dy,
 			   collision_layers,
 			   map_width,
 			   map_height,
 			   tile_width,
 			   tile_height,
 		   ) {
-		p.y += move_y * Player_Speed * dt
+		p.y += dy
 		moving = true
+	} else if dy > 0 {
+		p.vel_y = 0
 	}
 
 	if moving {
-		if math.abs(move_x) >= math.abs(move_y) {
-			p.facing = .Left if move_x < 0 else .Right
+		if math.abs(p.vel_x) >= math.abs(p.vel_y) {
+			p.facing = .Left if p.vel_x < 0 else .Right
 		} else {
-			p.facing = .Up if move_y < 0 else .Down
+			p.facing = .Up if p.vel_y < 0 else .Down
 		}
 	}
 
@@ -391,4 +470,6 @@ draw_player :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
 draw_player_ui :: proc(tileset: tiled.Tileset, texture: k2.Texture, p: Player) {
 	k2.draw_rect_outline({4, 4, 68, 12}, 2, k2.RED)
 	k2.draw_rect({6, 6, f32(p.hp) * 0.64, 8}, k2.RED)
+	k2.draw_rect_outline({4, 20, 68, 12}, 2, k2.GREEN)
+	k2.draw_rect({6, 22, f32(p.stamina) * 0.64, 8}, k2.GREEN)
 }

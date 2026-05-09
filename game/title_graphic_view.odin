@@ -33,7 +33,7 @@ close_view :: proc() {
 @(private = "file")
 render_view :: proc() {
 	k2.clear(k2.ORANGE)
-	k2.set_camera(nil)
+	k2.set_camera(ui_camera)
 	screen := k2.get_screen_size()
 	k2.draw_text(
 		TITLE,

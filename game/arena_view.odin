@@ -233,6 +233,7 @@ control_view :: proc() -> bool {
 
 @(private = "file")
 render_view :: proc() {
+	k2.set_camera(ui_camera)
 	k2.update_audio_stream(game_music)
 
 	ui_width := k2.get_screen_size().x / 2

@@ -98,7 +98,7 @@ control_view :: proc() -> bool {
 
 @(private = "file")
 render_view :: proc() {
-	k2.set_camera(nil)
+	k2.set_camera(ui_camera)
 	items := get_inventory_items(player.inventory)
 	item_count := len(items)
 

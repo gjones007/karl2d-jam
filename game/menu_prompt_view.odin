@@ -95,8 +95,7 @@ control_view :: proc() -> bool {
 
 @(private = "file")
 render_view :: proc() {
-
-	k2.set_camera(nil)
+	k2.set_camera(ui_camera)
 
 	frame_w := UI_MENU_FRAME_WIDTH
 	frame_padding := UI_FRAME_PADDING

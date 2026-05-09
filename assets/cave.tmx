@@ -111,52 +111,52 @@
 </data>
  </layer>
  <objectgroup id="5" name="objects">
-  <object id="1" name="hat_ogre|spawner" x="228" y="350.667">
+  <object id="1" name="N.HAT_OGRE.SPAWNER" x="228" y="350.667">
    <point/>
   </object>
-  <object id="3" name="tiny_ogre|spawner" x="768" y="208">
+  <object id="3" name="N.TINY_OGRE.SPAWNER" x="768" y="208">
    <point/>
   </object>
-  <object id="4" name="red_potion" x="47.3333" y="25.3333">
+  <object id="4" name="I.RED_POTION" x="47.3333" y="25.3333">
    <point/>
   </object>
-  <object id="6" name="exit" x="1269.91" y="443.909">
+  <object id="6" name="EXIT" x="1269.91" y="443.909">
    <point/>
   </object>
-  <object id="7" name="player_spawn" x="1199" y="449">
+  <object id="7" name="PLAYER_SPAWN" x="1199" y="449">
    <point/>
   </object>
-  <object id="8" name="guide_spawn" x="1155" y="433.333">
+  <object id="8" name="GUIDE_SPAWN" x="1155" y="433.333">
    <point/>
   </object>
-  <object id="10" name="battleaxe" x="439.25" y="181.333">
+  <object id="10" name="I.BATTLEAXE" x="439.25" y="181.333">
    <point/>
   </object>
-  <object id="13" name="ruby_ring" x="140.583" y="172">
+  <object id="13" name="I.RUBY_RING" x="140.583" y="172">
    <point/>
   </object>
-  <object id="14" name="two_headed_ogre" x="181" y="128">
+  <object id="14" name="N.TWO_HEADED_OGRE" x="181" y="128">
    <point/>
   </object>
-  <object id="15" name="bandit_ogre" x="214.5" y="142.5">
+  <object id="15" name="N.BANDIT_OGRE" x="214.5" y="142.5">
    <point/>
   </object>
-  <object id="16" name="bandit_ogre" x="222" y="242.75">
+  <object id="16" name="N.BANDIT_OGRE" x="222" y="242.75">
    <point/>
   </object>
-  <object id="17" name="money_pouch" x="197.75" y="261.5">
+  <object id="17" name="I.MONEY_POUCH" x="197.75" y="261.5">
    <point/>
   </object>
-  <object id="19" name="tiny_ogre|spawner" x="1024" y="327.333">
+  <object id="19" name="N.TINY_OGRE.SPAWNER" x="1024" y="327.333">
    <point/>
   </object>
-  <object id="20" name="round_ogre|spawner" x="574" y="203.333">
+  <object id="20" name="N.ROUND_OGRE.SPAWNER" x="574" y="203.333">
    <point/>
   </object>
-  <object id="22" name="tiny_ogre|spawner" x="299.333" y="194">
+  <object id="22" name="N.TINY_OGRE.SPAWNER" x="299.333" y="194">
    <point/>
   </object>
-  <object id="23" name="pickaxe" x="1049" y="421.5">
+  <object id="23" name="I.WORN_PICKAXE" x="1049" y="421.5">
    <point/>
   </object>
  </objectgroup>

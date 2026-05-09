@@ -12,6 +12,10 @@ init :: proc() {
 	k2.init(1000, 636, "First Quest")
 
 	load_default_input_config()
+
+	for npc in NPCPrefab {
+		infof("%v", npc, npcsPrefab[npc])
+	}
 	sounds_init()
 	set_view(&TITLE_GRAPHIC_VIEW)
 }
@@ -27,7 +31,6 @@ step :: proc() -> bool {
 		init_main_menu()
 	}
 	control_views()
-
 	k2.clear(k2.BLACK)
 	render_views()
 	k2.present()

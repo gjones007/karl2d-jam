@@ -42,7 +42,7 @@ NPCData :: struct {
 add_npc_from_prefabs :: proc(
 	x, y: f32,
 	prefab: NPCPrefab,
-	specials: NPCSpecials,
+	specials: NPCSpecials = {},
 ) -> Maybe(NPC_Handle) {
 	handle: Maybe(NPC_Handle)
 	ok := false
@@ -103,8 +103,8 @@ npc_actions :: proc(
 			continue
 		}
 
-		player_rect := k2.Rect{player.x, player.y, 16, 16}
-		npc_rect := k2.Rect{npc.x, npc.y, 16, 16}
+		player_rect := k2.Rect{player.x, player.y, TILE_SIZE, TILE_SIZE}
+		npc_rect := k2.Rect{npc.x, npc.y, TILE_SIZE, TILE_SIZE}
 
 		if _, does := k2.rect_overlap(npc_rect, player_rect); does {
 			take_damage_player(npc.damage)

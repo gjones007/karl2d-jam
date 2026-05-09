@@ -20,6 +20,7 @@ Input :: enum {
 	INPUT_GAME_WALK_WEST,
 	INPUT_GAME_JUMP,
 	INPUT_GAME_ATTACK,
+	INPUT_GAME_RUN,
 	// INPUT_GAME_ACTION,
 	// INPUT_GAME_NEXT_WEAPON,
 	// INPUT_GAME_PREV_WEAPON,
@@ -69,7 +70,7 @@ is_input_active :: proc(input: Input) -> bool {
 
 // for axis-bound inputs, returns a value between 0 and 1 representing how strongly the input is being activated. For button-bound inputs, returns 1 if active, otherwise 0.
 input_strength :: proc(input: Input) -> f32 {
-	if !inputInfo[input].stateInfo.active do return 0
+	// if !inputInfo[input].stateInfo.active do return 0
 
 	if inputInfo[input].gamepadBindInfo.axis != nil {
 		stick := k2.get_gamepad_axis(0, inputInfo[input].gamepadBindInfo.axis)
@@ -156,6 +157,15 @@ load_default_input_config :: proc() {
 	inputInfo[.INPUT_GAME_ATTACK].bindInfo.holdControl = false
 	inputInfo[.INPUT_GAME_ATTACK].bindInfo.holdShift = false
 	inputInfo[.INPUT_GAME_ATTACK].gamepadBindInfo.button = .Right_Face_Down
+
+	inputInfo[.INPUT_GAME_RUN].bindInfo.primaryKey = nil
+	inputInfo[.INPUT_GAME_RUN].bindInfo.secondaryKey = nil
+	inputInfo[.INPUT_GAME_RUN].bindInfo.state = .NONE
+	inputInfo[.INPUT_GAME_RUN].bindInfo.holdAlt = false
+	inputInfo[.INPUT_GAME_RUN].bindInfo.holdControl = true
+	inputInfo[.INPUT_GAME_RUN].bindInfo.holdShift = false
+	inputInfo[.INPUT_GAME_RUN].gamepadBindInfo.axis = .Right_Trigger
+	inputInfo[.INPUT_GAME_RUN].gamepadBindInfo.positive = true
 
 	// inputInfo[.INPUT_GAME_ACTION].bindInfo.primaryKey = .N
 	// inputInfo[.INPUT_GAME_ACTION].bindInfo.secondaryKey = nil
